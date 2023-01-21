@@ -39,6 +39,7 @@ func (h *Handler) GetUserByEmail(email string) (*models.User, error) {
 	filter := bson.M{"email": email}
 	err := h.UserDb.FindOne(h.C, filter).Decode(&user)
 	if err != nil {
+		h.L.Error("[UserDB] Error getting user", "error", err)
 		return nil, err
 	}
 	return &user, nil

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,7 +12,7 @@ import (
 // LoadENV will load the .env file if the GO_ENV environment variable is not set
 func LoadENV() error {
 	goEnv := os.Getenv("RAILWAY_ENVIRONMENT")
-	fmt.Println("RAILWAY_ENVIRONMENT: ", goEnv)
+	log.Println("RAILWAY_ENVIRONMENT: ", goEnv)
 	// use local .env file if railway env is local, otherwise use the env vars set in the railway console
 	if goEnv == "" || goEnv == "local" {
 		err := godotenv.Load()

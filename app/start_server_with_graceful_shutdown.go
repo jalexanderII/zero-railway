@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -29,7 +28,7 @@ func StartServerWithGracefulShutdown(a *fiber.App, port string) {
 	}()
 
 	// Run server.
-	if err := a.Listen(fmt.Sprintf("0.0.0.0%s", port)); err != nil {
+	if err := a.Listen("0.0.0.0" + port); err != nil {
 		log.Printf("Oops... Server is not running! Reason: %v", err)
 	}
 	<-idleConnsClosed
