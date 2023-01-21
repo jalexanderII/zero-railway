@@ -2,7 +2,10 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/joho/godotenv"
 )
@@ -11,7 +14,8 @@ import (
 func LoadENV() error {
 	goEnv := os.Getenv("RAILWAY_ENVIRONMENT")
 	fmt.Println("RAILWAY_ENVIRONMENT: ", goEnv)
-	if goEnv == "" || goEnv == "development" {
+	// use local .env file if railway env is local, otherwise use the env vars set in the railway console
+	if goEnv == "" || goEnv == "local" {
 		err := godotenv.Load()
 		if err != nil {
 			return err
@@ -20,15 +24,15 @@ func LoadENV() error {
 	return nil
 }
 
-// // GetEnv func to get env values
-// func GetEnv(key string) string {
-// 	_, b, _, _ := runtime.Caller(0)
-// 	// Root folder of this project
-// 	Root := filepath.Join(filepath.Dir(b), "../")
-// 	environmentPath := filepath.Join(Root, ".env")
-// 	err := godotenv.Load(environmentPath)
-// 	if err != nil {
-// 		log.Fatal("Error loading .env file")
-// 	}
-// 	return os.Getenv(key)
-// }
+// GetEnv func to get env values
+func GetEnv(key string) string {
+	_, b, _, _ := runtime.Caller(0)
+	// Root folder of this project
+	Root := filepath.Join(filepath.Dir(b), "../")
+	environmentPath := filepath.Join(Root, ".env")
+	err := godotenv.Load(environmentPath)
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	return os.Getenv(key)
+}

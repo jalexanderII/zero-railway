@@ -1,0 +1,42 @@
+package handlers
+
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/jalexanderII/zero-railway/models"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+// @Summary Create a user.
+// @Description create a single user.
+// @Tags user
+// @Accept json
+// @Param user body User true "User to create"
+// @Produce json
+// @Success 200 {object} CreateResDTO
+// @Router /users [post]
+func CreateUser(h *Handler) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		nUser := new(models.User)
+		if err := c.BodyParser(nUser); err != nil {
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err)
+		}
+
+		var existingUser models.User
+		filter := bson.M{"_id": nUser.ID}
+		err := h.Db.FindOne(h.C, filter).Decode(&existingUser)
+		if err != nil {
+			// ErrNoDocuments means that the filter did not match any documents in the collection
+			if err == mongo.ErrNoDocuments {
+				res, err := h.Db.InsertOne(h.C, nUser)
+				if err != nil {
+					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err)
+				}
+				return FiberJsonResponse(c, fiber.StatusOK, "success", "new user created", res.InsertedID)
+			}
+			h.L.Error("[UserDB] Error checking if user already exists", "error", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err)
+		}
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", existingUser.ID)
+	}
+}

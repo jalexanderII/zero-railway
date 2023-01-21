@@ -9,7 +9,7 @@ import (
 func getPort() string {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = ":3000"
+		port = ":8080"
 	} else {
 		port = ":" + port
 	}
@@ -17,15 +17,14 @@ func getPort() string {
 	return port
 }
 
-// @title Backend Template
+// @title Zero Fintech Backend API
 // @version 0.1
-// @description An example template of a Golang backend API using Fiber and MongoDB
+// @description This is the backend API for the Zero Fintech app.
 // @contact.name Joel Alexander
 // @license.name MIT
 // @host localhost:8080
 // @BasePath /
 func main() {
-	// setup and run app
 	err := app.SetupAndRunApp(getPort())
 	if err != nil {
 		panic(err)
