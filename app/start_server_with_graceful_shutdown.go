@@ -6,11 +6,10 @@ import (
 	"os/signal"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jalexanderII/zero-railway/config"
 )
 
 func getPort() string {
-	port := config.GetEnv("PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = ":3000"
 	} else {
