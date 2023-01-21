@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -10,14 +11,6 @@ import (
 
 // StartServerWithGracefulShutdown function for starting server with a graceful shutdown.
 func StartServerWithGracefulShutdown(a *fiber.App, port string) {
-	// Create tls certificate
-	// cer, err := tls.LoadX509KeyPair("certs/ssl.cert", "certs/ssl.key")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// config := &tls.Config{Certificates: []tls.Certificate{cer}}
-
 	// Create a channel for idle connections.
 	idleConnsClosed := make(chan struct{})
 
@@ -35,14 +28,8 @@ func StartServerWithGracefulShutdown(a *fiber.App, port string) {
 		close(idleConnsClosed)
 	}()
 
-	// Create custom listener
-	// ln, err := tls.Listen("tcp", ":8080", config)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
 	// Run server.
-	if err := a.Listen(port); err != nil {
+	if err := a.Listen(fmt.Sprintf("0.0.0.0%s", port)); err != nil {
 		log.Printf("Oops... Server is not running! Reason: %v", err)
 	}
 	<-idleConnsClosed
