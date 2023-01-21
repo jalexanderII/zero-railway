@@ -11,7 +11,7 @@ import (
 // @Description create a single user.
 // @Tags user
 // @Accept json
-// @Param user body User true "User to create"
+// @Param user body models.User true "User to create"
 // @Produce json
 // @Success 200 {object} CreateResDTO
 // @Router /users [post]

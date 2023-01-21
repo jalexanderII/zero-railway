@@ -1,5 +1,10 @@
 basePath: /
 definitions:
+  handlers.CreateResDTO:
+    properties:
+      inserted_id:
+        type: string
+    type: object
   handlers.CreateTodoDTO:
     properties:
       completed:
@@ -37,6 +42,77 @@ definitions:
       updated_count:
         type: integer
     type: object
+  models.Account:
+    properties:
+      annual_percentage_rate:
+        items:
+          $ref: '#/definitions/models.AnnualPercentageRates'
+        type: array
+      available_balance:
+        type: number
+      created_at:
+        type: string
+      credit_limit:
+        type: number
+      current_balance:
+        type: number
+      id:
+        type: string
+      is_overdue:
+        type: boolean
+      iso_currency_code:
+        type: string
+      last_payment_amount:
+        type: number
+      last_statement_balance:
+        type: number
+      last_statement_issue_date:
+        type: string
+      minimum_payment_amount:
+        type: number
+      name:
+        type: string
+      next_payment_due_date:
+        type: string
+      official_name:
+        type: string
+      plaid_account_id:
+        type: string
+      subtype:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.AnnualPercentageRates:
+    properties:
+      apr_percentage:
+        type: number
+      apr_type:
+        type: string
+      balance_subject_to_apr:
+        type: number
+      interest_charge_amount:
+        type: number
+    type: object
+  models.PaymentTask:
+    properties:
+      account_id:
+        type: string
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
   models.Todo:
     properties:
       completed:
@@ -50,16 +126,120 @@ definitions:
       title:
         type: string
     type: object
+  models.Transaction:
+    properties:
+      account_id:
+        type: string
+      amount:
+        type: number
+      authorized_date:
+        type: string
+      category:
+        items:
+          type: string
+        type: array
+      category_id:
+        type: string
+      created_at:
+        type: string
+      date:
+        type: string
+      detailed_category:
+        type: string
+      id:
+        type: string
+      iso_currency_code:
+        type: string
+      merchant_name:
+        type: string
+      name:
+        type: string
+      original_description:
+        type: string
+      payment_channel:
+        type: string
+      pending:
+        type: boolean
+      pending_transaction_id:
+        type: string
+      plaid_account_id:
+        type: string
+      plaid_transaction_id:
+        type: string
+      primary_category:
+        type: string
+      transaction_details:
+        $ref: '#/definitions/models.TransactionDetails'
+      transaction_type:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.TransactionDetails:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      reference_number:
+        type: string
+      state:
+        type: string
+      store_number:
+        type: string
+      zipcode:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      phone_number:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
     name: Joel Alexander
-  description: An example template of a Golang backend API using Fiber and MongoDB
+  description: This is the backend API for the Zero Fintech app.
   license:
     name: MIT
-  title: Backend Template
+  title: Zero Fintech Backend API
   version: "0.1"
 paths:
+  /accounts/:email:
+    get:
+      description: fetch all accounts for the user.
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Account'
+            type: array
+      summary: Get accounts for a single user.
+      tags:
+      - accounts
   /health:
     get:
       consumes:
@@ -73,6 +253,27 @@ paths:
       summary: Show the status of server.
       tags:
       - health
+  /payment_tasks/:email:
+    get:
+      description: fetch all payment_tasks for the user.
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.PaymentTask'
+            type: array
+      summary: Get payment_tasks for a single user.
+      tags:
+      - payment_tasks
   /todos:
     get:
       consumes:
@@ -174,4 +375,47 @@ paths:
       summary: Update a todo.
       tags:
       - todos
+  /transactions/:email:
+    get:
+      description: fetch all transactions for the user.
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Transaction'
+            type: array
+      summary: Get transactions for a single user.
+      tags:
+      - transactions
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: create a single user.
+      parameters:
+      - description: User to create
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CreateResDTO'
+      summary: Create a user.
+      tags:
+      - user
 swagger: "2.0"

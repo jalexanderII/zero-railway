@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "An example template of a Golang backend API using Fiber and MongoDB",
-        "title": "Backend Template",
+        "description": "This is the backend API for the Zero Fintech app.",
+        "title": "Zero Fintech Backend API",
         "contact": {
             "name": "Joel Alexander"
         },
@@ -14,6 +14,38 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/accounts/:email": {
+            "get": {
+                "description": "fetch all accounts for the user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Get accounts for a single user.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Account"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "get the status of server.",
@@ -30,6 +62,38 @@
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/payment_tasks/:email": {
+            "get": {
+                "description": "fetch all payment_tasks for the user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment_tasks"
+                ],
+                "summary": "Get payment_tasks for a single user.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.PaymentTask"
+                            }
+                        }
                     }
                 }
             }
@@ -186,9 +250,83 @@
                     }
                 }
             }
+        },
+        "/transactions/:email": {
+            "get": {
+                "description": "fetch all transactions for the user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Get transactions for a single user.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Transaction"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "post": {
+                "description": "create a single user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Create a user.",
+                "parameters": [
+                    {
+                        "description": "User to create",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateResDTO"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "handlers.CreateResDTO": {
+            "type": "object",
+            "properties": {
+                "inserted_id": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.CreateTodoDTO": {
             "type": "object",
             "properties": {
@@ -247,6 +385,114 @@
                 }
             }
         },
+        "models.Account": {
+            "type": "object",
+            "properties": {
+                "annual_percentage_rate": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AnnualPercentageRates"
+                    }
+                },
+                "available_balance": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "credit_limit": {
+                    "type": "number"
+                },
+                "current_balance": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_overdue": {
+                    "type": "boolean"
+                },
+                "iso_currency_code": {
+                    "type": "string"
+                },
+                "last_payment_amount": {
+                    "type": "number"
+                },
+                "last_statement_balance": {
+                    "type": "number"
+                },
+                "last_statement_issue_date": {
+                    "type": "string"
+                },
+                "minimum_payment_amount": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "next_payment_due_date": {
+                    "type": "string"
+                },
+                "official_name": {
+                    "type": "string"
+                },
+                "plaid_account_id": {
+                    "type": "string"
+                },
+                "subtype": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AnnualPercentageRates": {
+            "type": "object",
+            "properties": {
+                "apr_percentage": {
+                    "type": "number"
+                },
+                "apr_type": {
+                    "type": "string"
+                },
+                "balance_subject_to_apr": {
+                    "type": "number"
+                },
+                "interest_charge_amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.PaymentTask": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Todo": {
             "type": "object",
             "properties": {
@@ -263,6 +509,132 @@
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Transaction": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "authorized_date": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "category_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "detailed_category": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "iso_currency_code": {
+                    "type": "string"
+                },
+                "merchant_name": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "original_description": {
+                    "type": "string"
+                },
+                "payment_channel": {
+                    "type": "string"
+                },
+                "pending": {
+                    "type": "boolean"
+                },
+                "pending_transaction_id": {
+                    "type": "string"
+                },
+                "plaid_account_id": {
+                    "type": "string"
+                },
+                "plaid_transaction_id": {
+                    "type": "string"
+                },
+                "primary_category": {
+                    "type": "string"
+                },
+                "transaction_details": {
+                    "$ref": "#/definitions/models.TransactionDetails"
+                },
+                "transaction_type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TransactionDetails": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "reference_number": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "store_number": {
+                    "type": "string"
+                },
+                "zipcode": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

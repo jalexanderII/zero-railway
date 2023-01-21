@@ -34,6 +34,7 @@ func GetUsersPaymentTasks(h *Handler) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to unmarshall payment tasks", err)
 		}
 
+		h.L.Info("payment tasks found, first 10", paymentTasks[:10])
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user payment tasks", paymentTasks)
 	}
 }
