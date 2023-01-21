@@ -40,3 +40,22 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", existingUser.ID)
 	}
 }
+
+// @Summary Get a single user.
+// @Description fetch a single user.
+// @Tags users
+// @Param id path string true "User ID"
+// @Produce json
+// @Success 200 {object} models.User
+// @Router /users/:email [get]
+func GetUser(h *Handler) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		email := c.Params("email")
+		user, err := h.GetUserByEmail(email)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+		}
+
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "found user", user)
+	}
+}

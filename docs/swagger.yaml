@@ -418,4 +418,23 @@ paths:
       summary: Create a user.
       tags:
       - user
+  /users/:email:
+    get:
+      description: fetch a single user.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      summary: Get a single user.
+      tags:
+      - users
 swagger: "2.0"

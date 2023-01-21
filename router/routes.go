@@ -44,4 +44,5 @@ func SetupRoutes(app *fiber.App) {
 
 	users := app.Group("/users")
 	users.Post("/", handlers.CreateUser(userHandler))
+	users.Get("/:email", handlers.GetUser(userHandler))
 }
