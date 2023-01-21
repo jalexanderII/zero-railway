@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -9,6 +10,7 @@ import (
 // LoadENV will load the .env file if the GO_ENV environment variable is not set
 func LoadENV() error {
 	goEnv := os.Getenv("RAILWAY_ENVIRONMENT")
+	fmt.Println("RAILWAY_ENVIRONMENT: ", goEnv)
 	if goEnv == "" || goEnv == "development" {
 		err := godotenv.Load()
 		if err != nil {

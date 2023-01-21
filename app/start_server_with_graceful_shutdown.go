@@ -8,19 +8,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func getPort() string {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = ":3000"
-	} else {
-		port = ":" + port
-	}
-
-	return port
-}
-
 // StartServerWithGracefulShutdown function for starting server with a graceful shutdown.
-func StartServerWithGracefulShutdown(a *fiber.App) {
+func StartServerWithGracefulShutdown(a *fiber.App, port string) {
 	// Create tls certificate
 	// cer, err := tls.LoadX509KeyPair("certs/ssl.cert", "certs/ssl.key")
 	// if err != nil {
@@ -53,7 +42,7 @@ func StartServerWithGracefulShutdown(a *fiber.App) {
 	// }
 
 	// Run server.
-	if err := a.Listen(getPort()); err != nil {
+	if err := a.Listen(port); err != nil {
 		log.Printf("Oops... Server is not running! Reason: %v", err)
 	}
 	<-idleConnsClosed

@@ -7,7 +7,7 @@ import (
 	"github.com/jalexanderII/zero-railway/router"
 )
 
-func SetupAndRunApp() error {
+func SetupAndRunApp(port string) error {
 	// load env
 	err := config.LoadENV()
 	if err != nil {
@@ -35,7 +35,7 @@ func SetupAndRunApp() error {
 	// attach swagger
 	config.AddSwaggerRoutes(app)
 
-	StartServerWithGracefulShutdown(app)
+	StartServerWithGracefulShutdown(app, port)
 
 	return nil
 }
