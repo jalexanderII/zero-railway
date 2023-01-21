@@ -33,8 +33,6 @@ func GetUsersTransactions(h *Handler) func(c *fiber.Ctx) error {
 		if err = cursor.All(h.C, &transactions); err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to unmarshall transactions", err)
 		}
-
-		h.L.Info("Transactions found, first 10", transactions[:10])
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user transactions", transactions)
 	}
 }

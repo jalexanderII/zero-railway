@@ -33,7 +33,6 @@ func GetUsersAccounts(h *Handler) func(c *fiber.Ctx) error {
 		if err = cursor.All(h.C, &accounts); err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to unmarshall accounts", err)
 		}
-		h.L.Info("Accounts found, first 10", accounts[:10])
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user accounts", accounts)
 	}
 }
