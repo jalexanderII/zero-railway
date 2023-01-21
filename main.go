@@ -1,30 +1,20 @@
 package main
 
 import (
-	"os"
-
-	"github.com/gofiber/fiber/v2"
+	"github.com/jalexanderII/zero-railway/app"
 )
 
-func getPort() string {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = ":3000"
-	} else {
-		port = ":" + port
-	}
-
-	return port
-}
-
+// @title Backend Template
+// @version 0.1
+// @description An example template of a Golang backend API using Fiber and MongoDB
+// @contact.name Joel Alexander
+// @license.name MIT
+// @host localhost:8080
+// @BasePath /
 func main() {
-	app := fiber.New()
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Hello, Railway!",
-		})
-	})
-
-	app.Listen(getPort())
+	// setup and run app
+	err := app.SetupAndRunApp()
+	if err != nil {
+		panic(err)
+	}
 }

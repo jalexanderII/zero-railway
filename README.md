@@ -1,27 +1,29 @@
----
-title: Fiber
-description: A Fiber web server
-tags:
-  - fiber
-  - golang
----
+# the-better-backend
+A template for a GoLang backend using Fiber, MongoDB, a Makefile, and more
 
-# Fiber Example
+## Getting Started
 
-This example starts a [Fiber](https://gofiber.io/) server.
+### VIDEOS
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/7di0JR)
+- [GoLang Download & Setup](https://www.youtube.com/watch?v=Q7uh85_i0-M)
+- [Video Breakdown](https://youtu.be/6C-2R92L01Q)
 
-## ✨ Features
+### Prerequisites
 
-- Fiber
-- Go
+- [GoLang](https://golang.org/doc/install)
+- [MongoDB](https://docs.mongodb.com/manual/installation/)
 
-## 💁‍♀️ How to use
+### Installing
 
-- Connect to your Railway project `railway link`
-- Start the development server `railway run go run main.go`
+0. Install extra packages: 
+    ```go install github.com/cosmtrek/air@latest```
+    ```go install github.com/swaggo/swag/cmd/swag@latest```
+1. Clone the repo
+2. Create your own .env file
+3. ```make dev```
+4. view docs at http://localhost:8080/swagger
 
-## 📝 Notes
+### Scripts
 
-The server started simply returns a `message: "Hello, Railway!"` payload in JSON. The server code is located in `main.go`.
+- ```make dev``` - runs the server in development mode
+- ```make swagger``` - generates the swagger docs
