@@ -23,7 +23,7 @@ func GetUsersPaymentTasks(h *Handler) func(c *fiber.Ctx) error {
 		}
 
 		paymentTasks := make([]models.PaymentTask, 0)
-		filter := bson.M{"_id": user.ID}
+		filter := bson.M{"user_id": user.ID}
 		opts := options.Find().SetSkip(0).SetLimit(1000)
 		cursor, err := h.Db.Find(h.C, filter, opts)
 		if err != nil {
