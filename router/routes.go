@@ -33,16 +33,19 @@ func SetupRoutes(app *fiber.App) {
 	todos.Get("/:id", handlers.HandleGetOneTodo)
 	todos.Delete("/:id", handlers.HandleDeleteTodo)
 
-	accounts := app.Group("/accounts")
+	api := app.Group("/api")
+	coreEndpoints := api.Group("/core")
+
+	accounts := coreEndpoints.Group("/accounts")
 	accounts.Get("/:email", handlers.GetUsersAccounts(accountHandler))
 
-	transactions := app.Group("/transactions")
+	transactions := coreEndpoints.Group("/transactions")
 	transactions.Get("/:email", handlers.GetUsersTransactions(transactionHandler))
 
-	paymentTasks := app.Group("/payment_tasks")
+	paymentTasks := coreEndpoints.Group("/payment_tasks")
 	paymentTasks.Get("/:email", handlers.GetUsersPaymentTasks(paymentTaskHandler))
 
-	users := app.Group("/users")
+	users := coreEndpoints.Group("/users")
 	users.Post("/", handlers.CreateUser(userHandler))
 	users.Get("/:email", handlers.GetUser(userHandler))
 }
