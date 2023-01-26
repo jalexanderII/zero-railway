@@ -58,7 +58,7 @@ type PaymentPlan struct {
 	PlanType         PlanType           `json:"plan_type,omitempty"`
 	EndDate          string             `json:"end_date,omitempty"`
 	Active           bool               `json:"active,omitempty"`
-	Status           PaymentStatus      `json:"status,omitempty"`
+	Status           string             `json:"status,omitempty"`
 	PaymentAction    []PaymentAction    `json:"payment_action,omitempty"`
 }
 
