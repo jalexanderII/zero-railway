@@ -62,6 +62,8 @@ type PaymentPlan struct {
 	PaymentAction    []PaymentAction    `json:"payment_action,omitempty"`
 }
 
+//Status           PaymentStatus             `json:"status,omitempty"`
+
 type PaymentAction struct {
 	ID              primitive.ObjectID  `json:"id,omitempty" bson:"_id,omitempty"`
 	AccountId       string              `json:"account_id,omitempty"`
