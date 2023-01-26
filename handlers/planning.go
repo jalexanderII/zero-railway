@@ -81,39 +81,71 @@ func planningGetUserPaymentPlans(url string) (*ListPaymentPlanResponse, error) {
 	return &result, nil
 }
 
-//func GetWaterfallOverview(client core.CoreClient, ctx context.Context) func(c *fiber.Ctx) error {
-//	return func(c *fiber.Ctx) error {
-//		user, err := GetUserByEmail(client, ctx, c)
-//		if err != nil {
-//			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's from email", "data": err})
-//		}
-//
-//		overview, err := client.GetWaterfallOverview(ctx, &planning.GetUserOverviewRequest{UserId: user.GetId()})
-//		if err != nil {
-//			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error fetching user's waterfall", "data": err})
-//		}
-//		type Series struct {
-//			Name string    `json:"name"`
-//			Data []float32 `json:"data"`
-//		}
-//
-//		accountSeries := make(map[string]Series)
-//		monthlyWaterfall := overview.GetMonthlyWaterfall()
-//		for idx, WaterfallMonth := range monthlyWaterfall {
-//			for name, value := range WaterfallMonth.GetAccountToAmounts() {
-//				if series, ok := accountSeries[name]; ok {
-//					series.Data[idx] = float32(value)
-//				} else {
-//					accountSeries[name] = Series{Name: name, Data: make([]float32, 12)}
-//					accountSeries[name].Data[idx] = float32(value)
-//				}
-//			}
-//		}
-//		response := []Series{}
-//		for _, series := range accountSeries {
-//			response = append(response, series)
-//		}
-//
-//		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": response})
-//	}
-//}
+type WaterfallMonth struct {
+	AccountToAmounts map[string]float64 `json:"account_to_amounts"`
+}
+
+type WaterfallOverviewResponse struct {
+	MonthlyWaterfall []WaterfallMonth `json:"monthly_waterfall"`
+}
+
+type Series struct {
+	Name string    `json:"name"`
+	Data []float32 `json:"data"`
+}
+
+// @Summary Get user waterfall data.
+// @Description Create a waterfall from users payment plans.
+// @Tags planning
+// @Param email path string true "User email"
+// @Produce json
+// @Success 200 {object} Series
+// @Router /waterfall/:email [get]
+func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		email := c.Params("email")
+		user, err := h.GetUserByEmail(email)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+		}
+		url := fmt.Sprintf("%s/waterfall/%s", planningUrl, user.GetID().Hex())
+
+		overview, err := planningGetWaterfall(url)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Error fetching user's waterfall", err)
+		}
+
+		accountSeries := make(map[string]Series)
+		for idx, waterfallMonth := range overview.MonthlyWaterfall {
+			for name, value := range waterfallMonth.AccountToAmounts {
+				if series, ok := accountSeries[name]; ok {
+					series.Data[idx] = float32(value)
+				} else {
+					accountSeries[name] = Series{Name: name, Data: make([]float32, 12)}
+					accountSeries[name].Data[idx] = float32(value)
+				}
+			}
+		}
+		var response []Series
+		for _, series := range accountSeries {
+			response = append(response, series)
+		}
+
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "waterfall", response)
+	}
+}
+
+func planningGetWaterfall(url string) (*WaterfallOverviewResponse, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var result WaterfallOverviewResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

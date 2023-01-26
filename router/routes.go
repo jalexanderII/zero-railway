@@ -56,8 +56,8 @@ func SetupRoutes(app *fiber.App) {
 	users.Post("/", handlers.CreateUser(userHandler))
 	users.Get("/:email", handlers.GetUser(userHandler))
 
-	//planning := api.Group("/planning")
-	//planning.Get("/waterfall/:email", handlers.GetUsersAccountsByEmail(accountHandler))
+	planning := api.Group("/planning")
+	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL))
 
 	//plaidEndpoints := api.Group("/plaid")
 	//plaidEndpoints.Post("/create_link", )
