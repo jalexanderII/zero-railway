@@ -32,29 +32,35 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
 		}
+		h.L.Info("user found", "user", user)
 
 		accounts, err := GetUserAccounts(h, user.GetID())
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user accounts not found", err)
 		}
+		h.L.Info("user accounts found", "accounts", accounts)
 
 		totalCredit := 0.0
 		for _, account := range accounts {
 			totalCredit += account.CurrentBalance
 		}
+		h.L.Info("total credit", "total_credit", totalCredit)
 
 		var totalDebit = 0.0
 		debitAccBalance := GetDebitAccountBalance(h, user.GetID())
 		if debitAccBalance != nil {
 			totalDebit = debitAccBalance.CurrentBalance
 		}
+		h.L.Info("total debit", "total_debit", totalDebit)
 
 		var totalPlanAmount = 0.0
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
 		plans, err := planningGetUserPaymentPlans(url)
 		if err != nil {
+			h.L.Error("error getting user payment plans", "error", err)
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
 		}
+		h.L.Info("user payment plans found", "plans", plans)
 		for _, plan := range plans.PaymentPlans {
 			totalPlanAmount += plan.Amount
 		}
