@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/database"
@@ -14,7 +16,7 @@ import (
 
 import "go.mongodb.org/mongo-driver/mongo"
 
-type CreateResDTO struct {
+type DBInsertResponse struct {
 	InsertedId primitive.ObjectID `json:"inserted_id" bson:"_id"`
 }
 
@@ -23,6 +25,7 @@ type Handler struct {
 	UserDb *mongo.Collection
 	L      *logrus.Logger
 	C      context.Context
+	H      *http.Client
 }
 
 func NewHandler(collectionName string, l *logrus.Logger) *Handler {
@@ -31,6 +34,7 @@ func NewHandler(collectionName string, l *logrus.Logger) *Handler {
 		UserDb: database.GetCollection(os.Getenv("USER_COLLECTION")),
 		L:      l,
 		C:      context.Background(),
+		H:      &http.Client{Timeout: 10 * time.Second},
 	}
 }
 

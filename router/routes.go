@@ -17,6 +17,7 @@ func SetupRoutes(app *fiber.App) {
 	transactionHandler := handlers.NewHandler(os.Getenv("TRANSACTION_COLLECTION"), l)
 	paymentTaskHandler := handlers.NewHandler(os.Getenv("PAYMENT_TASK_COLLECTION"), l)
 	userHandler := handlers.NewHandler(os.Getenv("USER_COLLECTION"), l)
+	planningURL := os.Getenv("PLANNING_URL")
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -34,10 +35,16 @@ func SetupRoutes(app *fiber.App) {
 	todos.Delete("/:id", handlers.HandleDeleteTodo)
 
 	api := app.Group("/api")
+	api.Get("/user/:id", handlers.GetUserByID(userHandler))
+
 	coreEndpoints := api.Group("/core")
+	coreEndpoints.Get("/kpi/:email", handlers.GetKPIs(accountHandler, planningURL))
+	//coreEndpoints.Post("/paymentplan/:email",)
 
 	accounts := coreEndpoints.Group("/accounts")
-	accounts.Get("/:email", handlers.GetUsersAccounts(accountHandler))
+	accounts.Get("/:email", handlers.GetUsersAccountsByEmail(accountHandler))
+	accounts.Get("/:user_id", handlers.GetUsersAccountsByUserID(accountHandler))
+	accounts.Get("/:acc_id", handlers.GetAccount(accountHandler))
 
 	transactions := coreEndpoints.Group("/transactions")
 	transactions.Get("/:email", handlers.GetUsersTransactions(transactionHandler))
@@ -48,4 +55,15 @@ func SetupRoutes(app *fiber.App) {
 	users := coreEndpoints.Group("/users")
 	users.Post("/", handlers.CreateUser(userHandler))
 	users.Get("/:email", handlers.GetUser(userHandler))
+
+	//planning := api.Group("/planning")
+	//planning.Get("/waterfall/:email", handlers.GetUsersAccountsByEmail(accountHandler))
+
+	//plaidEndpoints := api.Group("/plaid")
+	//plaidEndpoints.Post("/create_link", )
+	//plaidEndpoints.Post("/exchange", )
+	//plaidEndpoints.Get("/linked/:email", )
+
+	//notificationEndpoints := api.Group("/notify")
+	//notificationEndpoints.Post("/", )
 }

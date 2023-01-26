@@ -14,7 +14,7 @@ type AnnualPercentageRates struct {
 }
 
 type Account struct {
-	ID                     primitive.ObjectID       `json:"id" bson:"_id"`
+	ID                     primitive.ObjectID       `json:"id,omitempty" bson:"_id,omitempty"`
 	PlaidAccountId         string                   `json:"plaid_account_id" bson:"plaid_account_id"`
 	UserId                 primitive.ObjectID       `json:"user_id" bson:"user_id"`
 	Name                   string                   `json:"name" bson:"name"`
@@ -34,4 +34,9 @@ type Account struct {
 	NextPaymentDueDate     string                   `json:"next_payment_due_date" bson:"next_payment_due_date"`
 	UpdatedAt              time.Time                `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	CreatedAt              time.Time                `json:"created_at,omitempty" bson:"created_at,omitempty"`
+}
+
+type GetDebitAccountBalanceResponse struct {
+	AvailableBalance float64 `json:"available_balance"`
+	CurrentBalance   float64 `json:"current_balance"`
 }

@@ -8,7 +8,7 @@ import (
 
 // PaymentTask is a DB Serialization of Proto PaymentTask
 type PaymentTask struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id"`
+	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	UserId    primitive.ObjectID `json:"user_id" bson:"user_id"`
 	AccountId primitive.ObjectID `json:"account_id" bson:"account_id"`
 	Amount    float64            `json:"amount" bson:"amount"`

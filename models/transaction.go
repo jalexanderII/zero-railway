@@ -19,7 +19,7 @@ type TransactionDetails struct {
 
 // Transaction is a DB Serialization of Proto Transaction
 type Transaction struct {
-	ID                   primitive.ObjectID  `json:"id" bson:"_id"`
+	ID                   primitive.ObjectID  `json:"id,omitempty" bson:"_id,omitempty"`
 	PlaidTransactionId   string              `json:"plaid_transaction_id" bson:"plaid_transaction_id"`
 	AccountId            primitive.ObjectID  `json:"account_id" bson:"account_id"`
 	PlaidAccountId       string              `json:"plaid_account_id" bson:"plaid_account_id"`
