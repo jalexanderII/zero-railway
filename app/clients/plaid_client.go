@@ -88,7 +88,7 @@ func NewPlaidClient(l *logrus.Logger) *PlaidClient {
 }
 
 // LinkTokenCreate creates a link token using the specified parameters
-func (p *PlaidClient) LinkTokenCreate(ctx context.Context, email, purpose string) (*models.CreateLinkTokenResponse, error) {
+func (p *PlaidClient) LinkTokenCreate(email, purpose string) (*models.CreateLinkTokenResponse, error) {
 	fmt.Printf("email: %+v", email)
 	fmt.Printf("purpose: %+v", purpose)
 
@@ -119,7 +119,7 @@ func (p *PlaidClient) LinkTokenCreate(ctx context.Context, email, purpose string
 	request.SetAccountFilters(purposeToAccountFilter[purp])
 
 	p.L.Infof("Link token request %+v", request)
-	linkTokenCreateResp, _, err := p.Client.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
+	linkTokenCreateResp, _, err := p.Client.LinkTokenCreate(p.C).LinkTokenCreateRequest(*request).Execute()
 	if err != nil {
 		p.L.Errorf("[Plaid Error] error creating link token %+v", renderError(err)["error"])
 		return nil, err
