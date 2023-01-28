@@ -40,7 +40,7 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 		}
 
-		linkTokenResp, err := plaidClient.LinkTokenCreate(plaidClient.C, input.Email, input.Purpose)
+		linkTokenResp, err := plaidClient.LinkTokenCreate(input.Email, input.Purpose)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to create link token", "data": err})
 		}
