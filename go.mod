@@ -6,6 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.41.0
 	github.com/gofiber/swagger v0.1.8
 	github.com/joho/godotenv v1.4.0
+	github.com/plaid/plaid-go v1.10.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/swaggo/swag v1.8.9
 	go.mongodb.org/mongo-driver v1.11.1
@@ -20,6 +21,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
+	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
@@ -40,9 +42,12 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
+	golang.org/x/oauth2 v0.0.0-20210218202405-ba52d332ba99 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.12 // indirect
+	google.golang.org/appengine v1.6.6 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

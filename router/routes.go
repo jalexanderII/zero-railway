@@ -1,6 +1,7 @@
 package router
 
 import (
+	client "github.com/jalexanderII/zero-railway/app/clients"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +19,7 @@ func SetupRoutes(app *fiber.App) {
 	paymentTaskHandler := handlers.NewHandler(os.Getenv("PAYMENT_TASK_COLLECTION"), l)
 	userHandler := handlers.NewHandler(os.Getenv("USER_COLLECTION"), l)
 	planningURL := os.Getenv("PLANNING_URL")
+	plaidClient := client.NewPlaidClient(l)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -59,10 +61,12 @@ func SetupRoutes(app *fiber.App) {
 	planning := api.Group("/planning")
 	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL))
 
-	//plaidEndpoints := api.Group("/plaid")
-	//plaidEndpoints.Post("/create_link", )
-	//plaidEndpoints.Post("/exchange", )
-	//plaidEndpoints.Get("/linked/:email", )
+	plaidEndpoints := api.Group("/plaid")
+	plaidEndpoints.Post("/info", handlers.Info(plaidClient))
+	plaidEndpoints.Get("/link/:email/:purpose", handlers.Link)
+	plaidEndpoints.Post("/create_link", handlers.CreateLinkToken(plaidClient))
+	plaidEndpoints.Post("/exchange", handlers.ExchangePublicToken(plaidClient))
+	plaidEndpoints.Get("/linked/:email", handlers.ArePlaidAccountsLinked(plaidClient))
 
 	//notificationEndpoints := api.Group("/notify")
 	//notificationEndpoints.Post("/", )

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="US">
+<!--=================================================
+    STYLES AND PAGE INSTRUCTIONS. IGNORE THIS STUFF
+    =================================================-->
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+    <style>
+        .outer { justify-self: center; margin: 20% auto 120px auto; width: 60%; ; font-family: 'Roboto', sans-serif;} a { text-decoration: underline; } li { padding-left: 1rem;}
+    </style>
+    <title>Link Button</title>
+</head>
+
+<body style="background-color:#B1EEFC;">
+<div class="outer">
+    Lets import your account information
+    <button id="link-button" style="background-color: white;border: #0A85EA;color: black;padding: 12px 32px;text-align: center;text-decoration: none;display: inline-block;font-size: 16px;margin: 4px 2px;box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19)">Import Account</button>
+</div>
+
+<!--=================================================
+    PLAID SCRIPTS. HERE'S THE STUFF YOU'LL EDIT!
+    =================================================-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script type="text/javascript">
+    (async function() {
+        const Email = "{{.Email}}"
+        const Purpose = "{{.Purpose}}"
+        const Token = await axios.post("https://127.0.0.1:8080/api/plaid/create_link", {email: Email, purpose: Purpose})
+            .then(response => {
+                console.log(response.data);
+                return response.data.link_token
+            })
+            .catch(error => console.error(error.message));
+
+        console.log('the email is:', Email);
+        console.log('link token is:', Token);
+        const configs = {
+            // Pass the link_token generated in step 2.
+            token: Token,
+            onLoad: function() {
+                // The Link module finished loading.
+            },
+            onSuccess: function(publicToken, metadata) {
+                // The onSuccess function is called when the user has
+                // successfully authenticated and selected an account to
+                // use.
+                //
+                // When called, you will send the public_token
+                // and the selected account ID, metadata.accounts,
+                // to your backend app server.
+                //
+                axios.post("https://127.0.0.1:8080/api/plaid/exchange", {
+                    email: Email,
+                    public_token: publicToken,
+                    purpose: Purpose,
+                    meta_data: metadata
+                })
+                    .then(response => {
+                        console.log(response.data);
+                    })
+                    .catch(error => console.error(error.message));
+
+                console.log('Public Token: ' + publicToken);
+                switch (metadata.accounts.length) {
+                    case 0:
+                        // Select Account is disabled: https://dashboard.plaid.com/link/account-select
+                        break;
+                    case 1:
+                        console.log('Customer-selected account ID: ' + metadata.accounts[0].id);
+                        console.log('Customer-selected account Name: ' + metadata.accounts[0].name);
+                        console.log('Customer-selected account Account type: ' + metadata.accounts[0].type);
+                        console.log('Customer-selected account Institution: ' + metadata.institution.name);
+                        break;
+                    default:
+                    // Multiple Accounts is enabled: https://dashboard.plaid.com/link/account-select
+                        for (let i = 0; i < metadata.accounts.length; i++) {
+                            console.log('Customer-selected account ID: ' + metadata.accounts[i].id);
+                            console.log('Customer-selected account Name: ' + metadata.accounts[i].name);
+                            console.log('Customer-selected account Account type: ' + metadata.accounts[i].type);
+                            console.log('Customer-selected account Institution: ' + metadata.institution.name);
+                        }
+                        break;
+                }
+            },
+            onExit: async function(err, metadata) {
+                // The user exited the Link flow.
+                if (err != null) {
+                    // The user encountered a Plaid API error
+                    // prior to exiting.
+                }
+                // metadata contains information about the institution
+                // that the user selected and the most recent
+                // API request IDs.
+                // Storing this information can be helpful for support.
+            },
+        };
+
+        const linkHandler = Plaid.create(configs);
+
+        document.getElementById('link-button').onclick = function() {
+            linkHandler.open();
+        };
+    })();
+</script>
+</body>
+
+</html>

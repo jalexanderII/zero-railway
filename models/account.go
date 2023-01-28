@@ -36,6 +36,10 @@ type Account struct {
 	CreatedAt              time.Time                `json:"created_at,omitempty" bson:"created_at,omitempty"`
 }
 
+func (a *Account) NotNull() bool {
+	return a != nil && a.PlaidAccountId != ""
+}
+
 type GetDebitAccountBalanceResponse struct {
 	AvailableBalance float64 `json:"available_balance"`
 	CurrentBalance   float64 `json:"current_balance"`
