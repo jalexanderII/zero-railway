@@ -41,7 +41,7 @@ func SetupRoutes(app *fiber.App) {
 
 	coreEndpoints := api.Group("/core")
 	coreEndpoints.Get("/kpi/:email", handlers.GetKPIs(accountHandler, planningURL))
-	//coreEndpoints.Post("/paymentplan/:email",)
+	coreEndpoints.Post("/paymentplan/:email", handlers.CreatePaymentPlan(paymentTaskHandler, planningURL))
 
 	accounts := coreEndpoints.Group("/accounts")
 	accounts.Get("/:email", handlers.GetUsersAccountsByEmail(accountHandler))

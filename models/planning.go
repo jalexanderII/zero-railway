@@ -1,6 +1,8 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type PlanType int32
 
@@ -48,6 +50,7 @@ const (
 
 type PaymentPlan struct {
 	ID               primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name             string             `json:"name,omitempty"`
 	PaymentPlanId    string             `json:"payment_plan_id,omitempty"`
 	UserId           string             `json:"user_id,omitempty"`
 	PaymentTaskId    []string           `json:"payment_task_id,omitempty"`
@@ -70,4 +73,34 @@ type PaymentAction struct {
 	Amount          float64             `json:"amount,omitempty"`
 	TransactionDate string              `json:"transaction_date,omitempty"`
 	Status          PaymentActionStatus `json:"status,omitempty"`
+}
+
+// MetaData is a DB Serialization of Proto MetaData
+type MetaData struct {
+	PreferredPlanType         int32   `json:"preferred_plan_type"`
+	PreferredTimelineInMonths float64 `json:"preferred_timeline_in_months"`
+	PreferredPaymentFreq      int32   `json:"preferred_payment_freq"`
+}
+
+type AccountInfo struct {
+	TransactionIds []string `json:"transaction_ids,omitempty"`
+	AccountId      string   `json:"account_id,omitempty"`
+	Amount         float64  `json:"amount,omitempty"`
+}
+
+type GetPaymentPlanRequest struct {
+	AccountInfo []AccountInfo `json:"account_info,omitempty"`
+	UserId      string        `json:"user_id,omitempty"`
+	MetaData    MetaData      `json:"meta_data,omitempty"`
+	SavePlan    bool          `json:"save_plan"`
+}
+
+type PaymentPlanResponse struct {
+	PaymentPlans []*PaymentPlan `json:"payment_plans,omitempty"`
+}
+
+type CreatePaymentPlanRequest struct {
+	PaymentTasks []PaymentTask `json:"payment_tasks,omitempty"`
+	MetaData     MetaData      `json:"meta_data,omitempty"`
+	SavePlan     bool          `json:"save_plan,omitempty"`
 }
