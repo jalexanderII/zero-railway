@@ -29,14 +29,8 @@ func SetupRoutes(app *fiber.App) {
 
 	app.Get("/health", handlers.HandleHealthCheck)
 
-	todos := app.Group("/todos")
-	todos.Get("/", handlers.HandleAllTodos)
-	todos.Post("/", handlers.HandleCreateTodo)
-	todos.Put("/:id", handlers.HandleUpdateTodo)
-	todos.Get("/:id", handlers.HandleGetOneTodo)
-	todos.Delete("/:id", handlers.HandleDeleteTodo)
-
 	api := app.Group("/api")
+
 	api.Get("/user/:id", handlers.GetUserByID(userHandler))
 
 	coreEndpoints := api.Group("/core")
@@ -61,6 +55,7 @@ func SetupRoutes(app *fiber.App) {
 	planning := api.Group("/planning")
 	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL))
 
+	// TODO: Add swagger annotations
 	plaidEndpoints := api.Group("/plaid")
 	plaidEndpoints.Post("/info", handlers.Info(plaidClient))
 	plaidEndpoints.Get("/link/:email/:purpose", handlers.Link)
