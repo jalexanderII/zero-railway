@@ -98,8 +98,7 @@ func CleanUp(h *Handler) func(c *fiber.Ctx) error {
 		}
 		var count = 0
 		for _, user := range results {
-			h.L.Info("User", "user", user)
-			if user.PhoneNumber == "" || user.PhoneNumber == "+1undefined" {
+			if user.PhoneNumber == "+1undefined" {
 				test := c.Params("test")
 				if test == "false" {
 					filter := bson.D{{Key: "_id", Value: user.ID}}
