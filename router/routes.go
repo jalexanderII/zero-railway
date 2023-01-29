@@ -46,7 +46,7 @@ func SetupRoutes(app *fiber.App) {
 	accounts := coreEndpoints.Group("/accounts")
 	accounts.Get("/:email", handlers.GetUsersAccountsByEmail(accountHandler))
 	accounts.Get("/:user_id", handlers.GetUsersAccountsByUserID(accountHandler))
-	accounts.Get("/:acc_id", handlers.GetAccount(accountHandler))
+	accounts.Get("/acc_id/:acc_id", handlers.GetAccount(accountHandler))
 
 	transactions := coreEndpoints.Group("/transactions")
 	transactions.Get("/:email", handlers.GetUsersTransactions(transactionHandler))
