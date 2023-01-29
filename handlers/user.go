@@ -31,7 +31,7 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 		}
 
 		var existingUser models.User
-		filter := bson.M{"_id": nUser.GetID()}
+		filter := bson.M{"email": nUser.Email}
 		err := h.Db.FindOne(h.C, filter).Decode(&existingUser)
 		if err != nil {
 			// ErrNoDocuments means that the filter did not match any documents in the collection
