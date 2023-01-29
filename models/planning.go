@@ -65,6 +65,23 @@ type PaymentPlan struct {
 	PaymentAction    []PaymentAction    `json:"payment_action,omitempty"`
 }
 
+type PaymentPlanS struct {
+	ID               primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	PaymentPlanId    string             `json:"payment_plan_id,omitempty"`
+	UserId           string             `json:"user_id,omitempty"`
+	PaymentTaskId    []string           `json:"payment_task_id,omitempty"`
+	Amount           float64            `json:"amount,omitempty"`
+	Timeline         float64            `json:"timeline,omitempty"`
+	PaymentFreq      PaymentFrequency   `json:"payment_freq,omitempty"`
+	AmountPerPayment float64            `json:"amount_per_payment,omitempty"`
+	PlanType         PlanType           `json:"plan_type,omitempty"`
+	EndDate          string             `json:"end_date,omitempty"`
+	Active           bool               `json:"active,omitempty"`
+	Status           string             `json:"status,omitempty"`
+	PaymentAction    []PaymentAction    `json:"payment_action,omitempty"`
+}
+
 type PaymentAction struct {
 	ID              primitive.ObjectID  `json:"id,omitempty" bson:"_id,omitempty"`
 	AccountId       string              `json:"account_id,omitempty"`

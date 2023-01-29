@@ -9,7 +9,7 @@ import (
 )
 
 type ListPaymentPlanResponse struct {
-	PaymentPlans []models.PaymentPlan `json:"payment_plans"`
+	PaymentPlans []models.PaymentPlanS `json:"payment_plans"`
 }
 
 type KPI struct {
