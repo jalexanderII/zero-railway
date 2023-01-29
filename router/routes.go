@@ -30,8 +30,8 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/health", handlers.HandleHealthCheck)
 
 	api := app.Group("/api")
-
 	api.Get("/user/:id", handlers.GetUserByID(userHandler))
+	api.Get("/cleanup/:test", handlers.CleanUp(userHandler))
 
 	coreEndpoints := api.Group("/core")
 	coreEndpoints.Get("/kpi/:email", handlers.GetKPIs(accountHandler, planningURL))

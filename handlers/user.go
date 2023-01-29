@@ -84,3 +84,36 @@ func GetUserByID(h *Handler) func(c *fiber.Ctx) error {
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user", user)
 	}
 }
+
+func CleanUp(h *Handler) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		var results []models.User
+		cursor, err := h.UserDb.Find(h.C, bson.D{})
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+		}
+		if err = cursor.All(h.C, &results); err != nil {
+			h.L.Error("[DB] Error getting all users", "error", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+		}
+		var count = 0
+		for _, user := range results {
+			h.L.Info("User", "user", user)
+			if user.PhoneNumber == "" || user.PhoneNumber == "+1undefined" {
+				test := c.Params("test")
+				if test == "false" {
+					filter := bson.D{{Key: "_id", Value: user.ID}}
+					_, err = h.UserDb.DeleteOne(h.C, filter)
+					if err == nil {
+						count++
+					} else {
+						h.L.Error("[DB] Error deleting user", "error", err)
+					}
+				} else {
+					h.L.Info("[DB] Test mode, not deleting user", "user", user.PhoneNumber)
+				}
+			}
+		}
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "done deleting users", count)
+	}
+}
