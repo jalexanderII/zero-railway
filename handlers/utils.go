@@ -51,6 +51,19 @@ func (h *Handler) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
+func (h *Handler) GetUserByID(userId string) (*models.User, error) {
+	Id, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, err
+	}
+	var user models.User
+	filter := bson.M{"_id": Id}
+	if err = h.UserDb.FindOne(h.C, filter).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func FiberJsonResponse(c *fiber.Ctx, httpStatus int, status, message string, data any) error {
 	return c.Status(httpStatus).JSON(fiber.Map{"status": status, "message": message, "data": data})
 }

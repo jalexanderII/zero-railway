@@ -68,6 +68,6 @@ func SetupRoutes(app *fiber.App) {
 	plaidEndpoints.Post("/exchange", handlers.ExchangePublicToken(plaidClient))
 	plaidEndpoints.Get("/linked/:email", handlers.ArePlaidAccountsLinked(plaidClient))
 
-	//notificationEndpoints := api.Group("/notify")
-	//notificationEndpoints.Post("/", )
+	notificationEndpoints := api.Group("/notify")
+	notificationEndpoints.Get("/", handlers.NotifyUsersUpcomingPaymentActions(accountHandler, planningURL))
 }

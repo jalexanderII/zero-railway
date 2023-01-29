@@ -150,6 +150,32 @@
                 }
             }
         },
+        "/notify": {
+            "get": {
+                "description": "Check all users payment actions and notify for any approaching payments.",
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "planning"
+                ],
+                "summary": "Notify all users of upcoming payment actions.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SendSMSResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/payment_tasks/:email": {
             "get": {
                 "description": "fetch all payment_tasks for the user.",
@@ -176,6 +202,41 @@
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/models.PaymentTask"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/paymentplan/:email": {
+            "post": {
+                "description": "Create a payment plans for a specific user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "paymentplan"
+                ],
+                "summary": "Create a Payment Plan for the user.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.PaymentPlan"
                             }
                         }
                     }
@@ -669,6 +730,128 @@
                 }
             }
         },
+        "models.PaymentAction": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.PaymentActionStatus"
+                },
+                "transaction_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PaymentActionStatus": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "PaymentActionStatus_PAYMENT_ACTION_STATUS_UNKNOWN",
+                "PaymentActionStatus_PAYMENT_ACTION_STATUS_PENDING",
+                "PaymentActionStatus_PAYMENT_ACTION_STATUS_COMPLETED",
+                "PaymentActionStatus_PAYMENT_ACTION_STATUS_IN_DEFAULT"
+            ]
+        },
+        "models.PaymentFrequency": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "PaymentFrequency_PAYMENT_FREQUENCY_UNKNOWN",
+                "PaymentFrequency_PAYMENT_FREQUENCY_WEEKLY",
+                "PaymentFrequency_PAYMENT_FREQUENCY_BIWEEKLY",
+                "PaymentFrequency_PAYMENT_FREQUENCY_MONTHLY",
+                "PaymentFrequency_PAYMENT_FREQUENCY_QUARTERLY"
+            ]
+        },
+        "models.PaymentPlan": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "amount_per_payment": {
+                    "type": "number"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "payment_action": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PaymentAction"
+                    }
+                },
+                "payment_freq": {
+                    "$ref": "#/definitions/models.PaymentFrequency"
+                },
+                "payment_plan_id": {
+                    "type": "string"
+                },
+                "payment_task_id": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "plan_type": {
+                    "$ref": "#/definitions/models.PlanType"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.PaymentStatus"
+                },
+                "timeline": {
+                    "type": "number"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PaymentStatus": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4
+            ],
+            "x-enum-varnames": [
+                "PaymentStatus_PAYMENT_STATUS_UNKNOWN",
+                "PaymentStatus_PAYMENT_STATUS_CURRENT",
+                "PaymentStatus_PAYMENT_STATUS_COMPLETED",
+                "PaymentStatus_PAYMENT_STATUS_CANCELLED",
+                "PaymentStatus_PAYMENT_STATUS_IN_DEFAULT"
+            ]
+        },
         "models.PaymentTask": {
             "type": "object",
             "properties": {
@@ -689,6 +872,30 @@
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.PlanType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "PlanType_PLAN_TYPE_UNKNOWN",
+                "PlanType_PLAN_TYPE_OPTIM_CREDIT_SCORE",
+                "PlanType_PLAN_TYPE_MIN_FEES"
+            ]
+        },
+        "models.SendSMSResponse": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "successful": {
+                    "type": "boolean"
                 }
             }
         },

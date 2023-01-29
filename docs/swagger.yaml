@@ -116,6 +116,94 @@ definitions:
       interest_charge_amount:
         type: number
     type: object
+  models.PaymentAction:
+    properties:
+      account_id:
+        type: string
+      amount:
+        type: number
+      id:
+        type: string
+      status:
+        $ref: '#/definitions/models.PaymentActionStatus'
+      transaction_date:
+        type: string
+    type: object
+  models.PaymentActionStatus:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    type: integer
+    x-enum-varnames:
+    - PaymentActionStatus_PAYMENT_ACTION_STATUS_UNKNOWN
+    - PaymentActionStatus_PAYMENT_ACTION_STATUS_PENDING
+    - PaymentActionStatus_PAYMENT_ACTION_STATUS_COMPLETED
+    - PaymentActionStatus_PAYMENT_ACTION_STATUS_IN_DEFAULT
+  models.PaymentFrequency:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    type: integer
+    x-enum-varnames:
+    - PaymentFrequency_PAYMENT_FREQUENCY_UNKNOWN
+    - PaymentFrequency_PAYMENT_FREQUENCY_WEEKLY
+    - PaymentFrequency_PAYMENT_FREQUENCY_BIWEEKLY
+    - PaymentFrequency_PAYMENT_FREQUENCY_MONTHLY
+    - PaymentFrequency_PAYMENT_FREQUENCY_QUARTERLY
+  models.PaymentPlan:
+    properties:
+      active:
+        type: boolean
+      amount:
+        type: number
+      amount_per_payment:
+        type: number
+      end_date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      payment_action:
+        items:
+          $ref: '#/definitions/models.PaymentAction'
+        type: array
+      payment_freq:
+        $ref: '#/definitions/models.PaymentFrequency'
+      payment_plan_id:
+        type: string
+      payment_task_id:
+        items:
+          type: string
+        type: array
+      plan_type:
+        $ref: '#/definitions/models.PlanType'
+      status:
+        $ref: '#/definitions/models.PaymentStatus'
+      timeline:
+        type: number
+      user_id:
+        type: string
+    type: object
+  models.PaymentStatus:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    type: integer
+    x-enum-varnames:
+    - PaymentStatus_PAYMENT_STATUS_UNKNOWN
+    - PaymentStatus_PAYMENT_STATUS_CURRENT
+    - PaymentStatus_PAYMENT_STATUS_COMPLETED
+    - PaymentStatus_PAYMENT_STATUS_CANCELLED
+    - PaymentStatus_PAYMENT_STATUS_IN_DEFAULT
   models.PaymentTask:
     properties:
       account_id:
@@ -130,6 +218,23 @@ definitions:
         type: string
       user_id:
         type: string
+    type: object
+  models.PlanType:
+    enum:
+    - 0
+    - 1
+    - 2
+    type: integer
+    x-enum-varnames:
+    - PlanType_PLAN_TYPE_UNKNOWN
+    - PlanType_PLAN_TYPE_OPTIM_CREDIT_SCORE
+    - PlanType_PLAN_TYPE_MIN_FEES
+  models.SendSMSResponse:
+    properties:
+      error_message:
+        type: string
+      successful:
+        type: boolean
     type: object
   models.Todo:
     properties:
@@ -326,6 +431,24 @@ paths:
       summary: Get a user KPIs.
       tags:
       - planning
+  /notify:
+    get:
+      consumes:
+      - '*/*'
+      description: Check all users payment actions and notify for any approaching
+        payments.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SendSMSResponse'
+            type: array
+      summary: Notify all users of upcoming payment actions.
+      tags:
+      - planning
   /payment_tasks/:email:
     get:
       description: fetch all payment_tasks for the user.
@@ -347,6 +470,29 @@ paths:
       summary: Get payment_tasks for a single user.
       tags:
       - payment_tasks
+  /paymentplan/:email:
+    post:
+      consumes:
+      - application/json
+      description: Create a payment plans for a specific user.
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.PaymentPlan'
+            type: array
+      summary: Create a Payment Plan for the user.
+      tags:
+      - paymentplan
   /todos:
     get:
       consumes:

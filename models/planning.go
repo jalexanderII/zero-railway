@@ -2,6 +2,7 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type PlanType int32
@@ -118,4 +119,23 @@ type CreatePaymentPlanRequest struct {
 	PaymentTasks []PaymentTask `json:"payment_tasks,omitempty"`
 	MetaData     MetaData      `json:"meta_data,omitempty"`
 	SavePlan     bool          `json:"save_plan,omitempty"`
+}
+
+type GetAllUpcomingPaymentActionsRequest struct {
+	Date time.Time `json:"date,omitempty"`
+}
+
+type GetAllUpcomingPaymentActionsResponse struct {
+	UserIds        []string        `json:"user_ids,omitempty"`
+	PaymentActions []PaymentAction `json:"payment_actions,omitempty"`
+}
+
+type SendSMSRequest struct {
+	PhoneNumber string `json:"phone_number,omitempty"`
+	Message     string `json:"message,omitempty"`
+}
+
+type SendSMSResponse struct {
+	Successful   bool   `json:"successful,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty"`
 }
