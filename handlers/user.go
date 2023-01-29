@@ -24,18 +24,13 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err)
 		}
 
-		if nUser.ID.IsZero() {
-			nUser.ID = primitive.NewObjectID()
-			nUser.CreatedAt = time.Now()
-			nUser.UpdatedAt = time.Now()
-		}
-
-		var existingUser models.User
-		filter := bson.M{"email": nUser.Email}
-		err := h.Db.FindOne(h.C, filter).Decode(&existingUser)
-		if err != nil {
+		user, err := h.GetUserByEmail(nUser.Email)
+		if user == nil || err != nil {
 			// ErrNoDocuments means that the filter did not match any documents in the collection
-			if err == mongo.ErrNoDocuments {
+			if user == nil || err == mongo.ErrNoDocuments {
+				nUser.ID = primitive.NewObjectID()
+				nUser.CreatedAt = time.Now()
+				nUser.UpdatedAt = time.Now()
 				res, err := h.Db.InsertOne(h.C, nUser)
 				if err != nil {
 					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err)
@@ -45,7 +40,7 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 			h.L.Error("[UserDB] Error checking if user already exists", "error", err)
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err)
 		}
-		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{existingUser.ID})
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{user.ID})
 	}
 }
 
