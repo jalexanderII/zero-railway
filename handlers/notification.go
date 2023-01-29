@@ -31,6 +31,7 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 		}
 		upcomingPaymentActionsAllUsers, err := planningGetAllUpcomingPaymentActions(url, paymentActionsRequest)
 		if err != nil {
+			h.L.Error("error listing upcoming PaymentActions", err)
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing upcoming PaymentActions", err)
 		}
 		userIds := upcomingPaymentActionsAllUsers.UserIds
@@ -92,6 +93,7 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 			}
 			resp, err := notifySendSMS(smsUrl, sendSMSRequest)
 			if err != nil {
+				h.L.Error("error sending SMS", err)
 				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error sending SMS", err)
 			}
 			resps = append(resps, *resp)
