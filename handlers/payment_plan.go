@@ -17,7 +17,8 @@ import (
 // @Description Create a payment plans for a specific user.
 // @Tags paymentplan
 // @Accept json
-// @Param email path string true "User email" body models.GetPaymentPlanRequest true "Payment Plan request"
+// @Param email path string true "User email"
+// @Param payment_plan_request body models.GetPaymentPlanRequest true "Payment Plan request"
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
 // @Router /paymentplan/:email [post]
@@ -31,8 +32,8 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 
 		currentDate := time.Now().Format("01.02.2006")
 		var input models.GetPaymentPlanRequest
-		if err := c.BodyParser(&input); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Error on login request", "data": err})
+		if err = c.BodyParser(&input); err != nil {
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request", err)
 		}
 		input.UserId = user.GetID().Hex()
 
@@ -47,7 +48,7 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 		}
 		paymentPlanResponse, err := GetPaymentPlan(h, &models.GetPaymentPlanRequest{AccountInfo: accountInfoList, UserId: input.UserId, MetaData: metaData, SavePlan: input.SavePlan}, planningUrl)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan", err)
 		}
 
 		responsePaymentPlans := make([]models.PaymentPlan, len(paymentPlanResponse.PaymentPlans))
@@ -58,7 +59,7 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 			responsePaymentPlans[idx] = pp
 		}
 
-		return c.Status(fiber.StatusOK).JSON(responsePaymentPlans)
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "payment plan created", responsePaymentPlans)
 	}
 }
 
