@@ -1,8 +1,9 @@
 package router
 
 import (
-	client "github.com/jalexanderII/zero-railway/app/clients"
 	"os"
+
+	client "github.com/jalexanderII/zero-railway/app/clients"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/handlers"
@@ -19,7 +20,7 @@ func SetupRoutes(app *fiber.App) {
 	paymentTaskHandler := handlers.NewHandler(os.Getenv("PAYMENT_TASK_COLLECTION"), l)
 	userHandler := handlers.NewHandler(os.Getenv("USER_COLLECTION"), l)
 	planningURL := os.Getenv("PLANNING_URL")
-	plaidClient := client.NewPlaidClient(l)
+	plaidClient := client.NewPlaidClient(os.Getenv("PLAID_COLLECTION"), l)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{

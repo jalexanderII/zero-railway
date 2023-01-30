@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	"time"
 )
 
 type SendSMSResponse struct {
@@ -29,7 +29,7 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 		paymentActionsRequest := &models.GetAllUpcomingPaymentActionsRequest{
 			Date: time.Now(),
 		}
-		upcomingPaymentActionsAllUsers, err := planningGetAllUpcomingPaymentActions(url, paymentActionsRequest)
+		upcomingPaymentActionsAllUsers, err := planningGetAllUpcomingPaymentActions(h, url, paymentActionsRequest)
 		if err != nil {
 			h.L.Error("error listing upcoming PaymentActions", err)
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing upcoming PaymentActions", err)
@@ -91,7 +91,7 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 				PhoneNumber: user.PhoneNumber,
 				Message:     message,
 			}
-			resp, err := notifySendSMS(smsUrl, sendSMSRequest)
+			resp, err := notifySendSMS(h, smsUrl, sendSMSRequest)
 			if err != nil {
 				h.L.Error("error sending SMS", err)
 				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error sending SMS", err)
@@ -102,13 +102,13 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 	}
 }
 
-func planningGetAllUpcomingPaymentActions(url string, req *models.GetAllUpcomingPaymentActionsRequest) (*models.GetAllUpcomingPaymentActionsResponse, error) {
+func planningGetAllUpcomingPaymentActions(h *Handler, url string, req *models.GetAllUpcomingPaymentActionsRequest) (*models.GetAllUpcomingPaymentActionsResponse, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -122,13 +122,13 @@ func planningGetAllUpcomingPaymentActions(url string, req *models.GetAllUpcoming
 	return &result, nil
 }
 
-func notifySendSMS(url string, req *models.SendSMSRequest) (*models.SendSMSResponse, error) {
+func notifySendSMS(h *Handler, url string, req *models.SendSMSRequest) (*models.SendSMSResponse, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}

@@ -3,9 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
-	"net/http"
 )
 
 type ListPaymentPlanResponse struct {
@@ -51,7 +51,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 
 		var totalPlanAmount = 0.0
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
-		plans, err := planningGetUserPaymentPlans(url)
+		plans, err := planningGetUserPaymentPlans(h, url)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
 		}
@@ -66,8 +66,8 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	}
 }
 
-func planningGetUserPaymentPlans(url string) (*ListPaymentPlanResponse, error) {
-	resp, err := http.Get(url)
+func planningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanResponse, error) {
+	resp, err := h.H.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		}
 		url := fmt.Sprintf("%s/waterfall/%s", planningUrl, user.GetID().Hex())
 
-		overview, err := planningGetWaterfall(url)
+		overview, err := planningGetWaterfall(h, url)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Error fetching user's waterfall", err)
 		}
@@ -135,8 +135,8 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	}
 }
 
-func planningGetWaterfall(url string) (*WaterfallOverviewResponse, error) {
-	resp, err := http.Get(url)
+func planningGetWaterfall(h *Handler, url string) (*WaterfallOverviewResponse, error) {
+	resp, err := h.H.Get(url)
 	if err != nil {
 		return nil, err
 	}

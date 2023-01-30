@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jalexanderII/zero-railway/database"
-	"github.com/jalexanderII/zero-railway/models"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/jalexanderII/zero-railway/database"
+	"github.com/jalexanderII/zero-railway/models"
 
 	"github.com/plaid/plaid-go/plaid"
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,7 @@ type PlaidClient struct {
 	L *logrus.Logger
 	C context.Context
 	// Database collection
-	PlaidDB *mongo.Collection
+	PlaidDb *mongo.Collection
 	UserDb  *mongo.Collection
 	AccDb   *mongo.Collection
 	TrxnDb  *mongo.Collection
@@ -55,9 +56,9 @@ type PlaidClient struct {
 	PublicToken *models.Token
 }
 
-func NewPlaidClient(l *logrus.Logger) *PlaidClient {
+func NewPlaidClient(collectionName string, l *logrus.Logger) *PlaidClient {
 	// set constants from env
-	PlaidDB := database.GetCollection(os.Getenv("PLAID_COLLECTION"))
+	PlaidDb := database.GetCollection(collectionName)
 	UserDb := database.GetCollection(os.Getenv("USER_COLLECTION"))
 	AccDb := database.GetCollection(os.Getenv("ACCOUNT_COLLECTION"))
 	TrxnDb := database.GetCollection(os.Getenv("TRANSACTION_COLLECTION"))
@@ -82,7 +83,7 @@ func NewPlaidClient(l *logrus.Logger) *PlaidClient {
 		CountryCodes: countryCodes,
 		L:            l,
 		C:            context.Background(),
-		PlaidDB:      PlaidDB,
+		PlaidDb:      PlaidDb,
 		UserDb:       UserDb,
 		AccDb:        AccDb,
 		TrxnDb:       TrxnDb,
@@ -356,7 +357,7 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 // same id as the user.
 func (p *PlaidClient) SaveToken(token *models.Token) error {
 	token.ID = primitive.NewObjectID()
-	_, err := p.PlaidDB.InsertOne(p.C, token)
+	_, err := p.PlaidDb.InsertOne(p.C, token)
 	if err != nil {
 		p.L.Info("Error inserting new Token ", err)
 		return err
@@ -367,7 +368,7 @@ func (p *PlaidClient) SaveToken(token *models.Token) error {
 func (p *PlaidClient) UpdateToken(TokenId primitive.ObjectID, value, itemId string) error {
 	filter := bson.D{{Key: "_id", Value: TokenId}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "value", Value: value}, {Key: "item_id", Value: itemId}}}}
-	_, err := p.PlaidDB.UpdateOne(p.C, filter, update)
+	_, err := p.PlaidDb.UpdateOne(p.C, filter, update)
 	if err != nil {
 		return err
 	}
@@ -377,7 +378,7 @@ func (p *PlaidClient) UpdateToken(TokenId primitive.ObjectID, value, itemId stri
 // GetTokens returns every token associated to the user in the form of a slice of Token pointers.
 func (p *PlaidClient) GetTokens(username string) ([]*models.Token, error) {
 	var results []models.Token
-	cursor, err := p.PlaidDB.Find(p.C, bson.D{{Key: "user.username", Value: username}})
+	cursor, err := p.PlaidDb.Find(p.C, bson.D{{Key: "user.username", Value: username}})
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +409,7 @@ func (p *PlaidClient) GetToken(accessToken, tokenId string) (*models.Token, erro
 		filter = []bson.M{{"value": accessToken}}
 	}
 
-	err := p.PlaidDB.FindOne(p.C, bson.M{"$or": filter}).Decode(&token)
+	err := p.PlaidDb.FindOne(p.C, bson.M{"$or": filter}).Decode(&token)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +420,7 @@ func (p *PlaidClient) GetToken(accessToken, tokenId string) (*models.Token, erro
 func (p *PlaidClient) GetUserToken(user *models.User) (*models.Token, error) {
 	var token models.Token
 	filter := []bson.M{{"user._id": user.ID}, {"user.username": user.Username}, {"user.email": user.Email}}
-	err := p.PlaidDB.FindOne(p.C, bson.M{"$or": filter}).Decode(&token)
+	err := p.PlaidDb.FindOne(p.C, bson.M{"$or": filter}).Decode(&token)
 	if err != nil {
 		return nil, err
 	}

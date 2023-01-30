@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
-	"net/http"
-	"time"
 )
 
 // @Summary Create a Payment Plan for the user.
@@ -92,20 +92,20 @@ func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl st
 
 	// send payment tasks to planning to get payment plans
 	url := fmt.Sprintf("%s/paymentplan", planningUrl)
-	res, err := planningCreatePaymentPlan(url, &models.CreatePaymentPlanRequest{PaymentTasks: paymentTasks, MetaData: in.MetaData, SavePlan: in.SavePlan})
+	res, err := planningCreatePaymentPlan(h, url, &models.CreatePaymentPlanRequest{PaymentTasks: paymentTasks, MetaData: in.MetaData, SavePlan: in.SavePlan})
 	if err != nil {
 		return nil, err
 	}
 	return &models.PaymentPlanResponse{PaymentPlans: res.PaymentPlans}, nil
 }
 
-func planningCreatePaymentPlan(url string, req *models.CreatePaymentPlanRequest) (*models.PaymentPlanResponse, error) {
+func planningCreatePaymentPlan(h *Handler, url string, req *models.CreatePaymentPlanRequest) (*models.PaymentPlanResponse, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		panic(err)
 	}

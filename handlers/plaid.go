@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	"strings"
+
 	client "github.com/jalexanderII/zero-railway/app/clients"
 	"github.com/jalexanderII/zero-railway/models"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -61,58 +62,73 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 	}
 }
 
+type Input struct {
+	Email       string               `json:"email"`
+	PublicToken string               `json:"public_token"`
+	Purpose     models.Purpose       `json:"purpose"`
+	MetaData    models.PlaidMetaData `json:"meta_data,omitempty"`
+}
+
+type Response struct {
+	AccessToken string `json:"access_token"`
+	ItemId      string `json:"item_id"`
+	Token       Input  `json:"token"`
+}
+
+// @Summary Exchange public token and save account info.
+// @Description Save account info from plaid link
+// @Tags plaid
+// @Accept json
+// @Param input body Input true "Input data"
+// @Produce json
+// @Success 200 {object} Response
+// @Router /exchange [post]
 func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		type Input struct {
-			Email       string               `json:"email"`
-			PublicToken string               `json:"public_token"`
-			Purpose     models.Purpose       `json:"purpose"`
-			MetaData    models.PlaidMetaData `json:"meta_data,omitempty"`
-		}
 		var input Input
 		if err := c.BodyParser(&input); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to parse input", err)
 		}
 		if strings.HasPrefix(input.Email, "public") {
 			temp := input.Email
 			input.Email = input.PublicToken
 			input.PublicToken = temp
-			plaidClient.L.Info("INPUT: %+v", input)
+			plaidClient.L.Info("INPUT: ", input)
 		}
-		plaidClient.L.Info("METADATA: %+v", input.MetaData)
+		plaidClient.L.Info("METADATA: ", input.MetaData)
 
 		user, err := plaidClient.GetUser(input.Email)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get user for token", "data": err})
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get user for token", err)
 		}
 
 		token, err := plaidClient.ExchangePublicToken(plaidClient.C, input.PublicToken)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to exchange for token", "data": err})
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to exchange for token", err)
 		}
 
 		token.User = user
 		token.Institution = input.MetaData.Institution.Name
 		token.InstitutionID = input.MetaData.Institution.InstitutionId
 		token.Purpose = input.Purpose
-		plaidClient.L.Info("TOKEN: %+v", token)
+		plaidClient.L.Info("TOKEN: ", token)
 
 		// dbToken, err := plaidClient.GetUserToken(ctx, user)
 		// if err == mongo.ErrNoDocuments || c.Method() == http.MethodPost {
 		if err = plaidClient.SaveToken(token); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Failure to create access token", "data": err})
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to save token", err)
 		}
 
 		err = GetandSaveAccountDetails(plaidClient, token, c)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get and save account details", "data": err})
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get and save account details", err)
 		}
 		// } else {
 		// 	if err = plaidClient.UpdateToken(ctx, dbToken.ID, token.Value, token.ItemId); err != nil {
 		// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "error", "message": "Failure to update access token", "data": err})
 		// 	}
 		// }
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "message": "Access token created successfully", "access_token": token.Value, "item_id": token.ItemId, "token": input})
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "Access token created successfully", Response{token.Value, token.ItemId, input})
 	}
 }
 
