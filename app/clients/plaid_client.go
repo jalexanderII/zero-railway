@@ -57,6 +57,10 @@ type PlaidClient struct {
 
 func NewPlaidClient(l *logrus.Logger) *PlaidClient {
 	// set constants from env
+	PlaidDB := database.GetCollection(os.Getenv("PLAID_COLLECTION"))
+	UserDb := database.GetCollection(os.Getenv("USER_COLLECTION"))
+	AccDb := database.GetCollection(os.Getenv("ACCOUNT_COLLECTION"))
+	TrxnDb := database.GetCollection(os.Getenv("TRANSACTION_COLLECTION"))
 	plaidEnv := os.Getenv("PLAID_ENV")
 	plaidSecret := os.Getenv(environmentSecret[plaidEnv])
 	plaidClient := os.Getenv("PLAID_CLIENT_ID")
@@ -78,10 +82,10 @@ func NewPlaidClient(l *logrus.Logger) *PlaidClient {
 		CountryCodes: countryCodes,
 		L:            l,
 		C:            context.Background(),
-		PlaidDB:      database.GetCollection(os.Getenv("PLAID_COLLECTION")),
-		UserDb:       database.GetCollection(os.Getenv("USER_COLLECTION")),
-		AccDb:        database.GetCollection(os.Getenv("ACCOUNT_COLLECTION")),
-		TrxnDb:       database.GetCollection(os.Getenv("TRANSACTION_COLLECTION")),
+		PlaidDB:      PlaidDB,
+		UserDb:       UserDb,
+		AccDb:        AccDb,
+		TrxnDb:       TrxnDb,
 		LinkToken:    nil,
 		PublicToken:  nil,
 	}
@@ -354,7 +358,7 @@ func (p *PlaidClient) SaveToken(token *models.Token) error {
 	token.ID = primitive.NewObjectID()
 	_, err := p.PlaidDB.InsertOne(p.C, token)
 	if err != nil {
-		p.L.Info("Error inserting new Token", err)
+		p.L.Info("Error inserting new Token ", err)
 		return err
 	}
 	return nil

@@ -77,9 +77,9 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 			temp := input.Email
 			input.Email = input.PublicToken
 			input.PublicToken = temp
-			fmt.Printf("INPUT: %+v", input)
+			plaidClient.L.Info("INPUT: %+v", input)
 		}
-		fmt.Printf("METADATA: %+v", input.MetaData)
+		plaidClient.L.Info("METADATA: %+v", input.MetaData)
 
 		user, err := plaidClient.GetUser(input.Email)
 		if err != nil {
@@ -95,6 +95,8 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 		token.Institution = input.MetaData.Institution.Name
 		token.InstitutionID = input.MetaData.Institution.InstitutionId
 		token.Purpose = input.Purpose
+		plaidClient.L.Info("TOKEN: %+v", token)
+
 		// dbToken, err := plaidClient.GetUserToken(ctx, user)
 		// if err == mongo.ErrNoDocuments || c.Method() == http.MethodPost {
 		if err = plaidClient.SaveToken(token); err != nil {
