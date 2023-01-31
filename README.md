@@ -1,17 +1,8 @@
-# the-better-backend
-A template for a GoLang backend using Fiber, MongoDB, a Makefile, and more
+## Zero
 
-## Getting Started
-
-### VIDEOS
-
-- [GoLang Download & Setup](https://www.youtube.com/watch?v=Q7uh85_i0-M)
-- [Video Breakdown](https://youtu.be/6C-2R92L01Q)
-
-### Prerequisites
-
-- [GoLang](https://golang.org/doc/install)
-- [MongoDB](https://docs.mongodb.com/manual/installation/)
+This directory is the Core Service Backend for Zero Fintech. It is deployed on Railway as an EC2 instance.
+This backend is the central gatewaty for all requests from the frontend. And the central location to the Core Mongo DB database 
+The backend contains the plaid API server and the core server functionality
 
 ### Installing
 
