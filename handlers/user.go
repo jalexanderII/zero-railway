@@ -88,7 +88,7 @@ func GetUserByID(h *Handler) func(c *fiber.Ctx) error {
 }
 
 type UpdateInput struct {
-	PhoneNumber string `json:"phoneNumber"`
+	PhoneNumber string `json:"phoneNumber" bson:"phone_number"`
 }
 
 type UpdateResponse struct {
