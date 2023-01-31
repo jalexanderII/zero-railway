@@ -52,6 +52,7 @@ func SetupRoutes(app *fiber.App) {
 	users := coreEndpoints.Group("/users")
 	users.Post("/", handlers.CreateUser(userHandler))
 	users.Get("/:email", handlers.GetUser(userHandler))
+	users.Put("/:email", handlers.UpdateUserPhone(userHandler))
 
 	planning := api.Group("/planning")
 	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL))

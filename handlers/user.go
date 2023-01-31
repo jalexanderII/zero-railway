@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 // @Summary Create a user.
@@ -82,6 +84,48 @@ func GetUserByID(h *Handler) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user", user)
+	}
+}
+
+type UpdateInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
+type UpdateResponse struct {
+	ModifiedCount int64 `json:"modified_count"`
+}
+
+// @Summary Update a users phone number.
+// @Description update a single users phone number.
+// @Tags users
+// @Accept json
+// @Param input body UpdateInput true "Update request"
+// @Param email path string true "User Email"
+// @Produce json
+// @Success 200 {object} UpdateResponse
+// @Router /users/:email [put]
+func UpdateUserPhone(h *Handler) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		email := c.Params("email")
+		user, err := h.GetUserByEmail(email)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+		}
+
+		uUser := new(UpdateInput)
+		if err = c.BodyParser(uUser); err != nil {
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err)
+		}
+		uUser.PhoneNumber = fmt.Sprintf("+1%s", uUser.PhoneNumber)
+		h.L.Info("User phone number updated", "user", user.Email, "phone_number", uUser.PhoneNumber)
+
+		filter := bson.M{"_id": user.GetID()}
+		update := bson.M{"$set": uUser}
+		res, err := h.Db.UpdateOne(h.C, filter, update)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to update user", err)
+		}
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "updated user", UpdateResponse{res.ModifiedCount})
 	}
 }
 
