@@ -116,16 +116,19 @@ func UpdateUserPhone(h *Handler) func(c *fiber.Ctx) error {
 		if err = c.BodyParser(uUser); err != nil {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err)
 		}
-		uUser.PhoneNumber = fmt.Sprintf("+1%s", uUser.PhoneNumber)
-		h.L.Info("User phone number updated", "user", user.Email, "phone_number", uUser.PhoneNumber)
+		if user.PhoneNumber != uUser.PhoneNumber {
+			uUser.PhoneNumber = fmt.Sprintf("+1%s", uUser.PhoneNumber)
+			h.L.Info("User phone number updated", "user", user.Email, "phone_number", uUser.PhoneNumber)
 
-		filter := bson.M{"_id": user.GetID()}
-		update := bson.M{"$set": uUser}
-		res, err := h.Db.UpdateOne(h.C, filter, update)
-		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to update user", err)
+			filter := bson.M{"_id": user.GetID()}
+			update := bson.M{"$set": uUser}
+			res, err := h.Db.UpdateOne(h.C, filter, update)
+			if err != nil {
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to update user", err)
+			}
+			return FiberJsonResponse(c, fiber.StatusOK, "success", "updated user", UpdateResponse{res.ModifiedCount})
 		}
-		return FiberJsonResponse(c, fiber.StatusOK, "success", "updated user", UpdateResponse{res.ModifiedCount})
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "no update needed", UpdateResponse{0})
 	}
 }
 
