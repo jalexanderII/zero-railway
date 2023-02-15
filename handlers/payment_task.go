@@ -19,7 +19,7 @@ func GetUsersPaymentTasks(h *Handler) func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		paymentTasks := make([]models.PaymentTask, 0)
@@ -27,7 +27,7 @@ func GetUsersPaymentTasks(h *Handler) func(c *fiber.Ctx) error {
 		opts := options.Find().SetSkip(0).SetLimit(1000)
 		cursor, err := h.Db.Find(h.C, filter, opts)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "payment tasks for that user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "payment tasks for that user not found", err.Error())
 		}
 
 		if err = cursor.All(h.C, &paymentTasks); err != nil {

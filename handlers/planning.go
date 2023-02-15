@@ -30,12 +30,12 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		accounts, err := GetUserAccounts(h, user.GetID())
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user accounts not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user accounts not found", err.Error())
 		}
 
 		totalCredit := 0.0
@@ -69,7 +69,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 func planningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanResponse, error) {
 	resp, err := h.H.Get(url)
 	if err != nil {
-		h.L.Error("Error fetching user payment plans ", "error ", err)
+		h.L.Error("Error fetching user payment plans ", "error ", err.Error())
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func planningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanRespon
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
-		h.L.Error("Error decoding user payment plans for KPI ", "error ", err)
+		h.L.Error("Error decoding user payment plans for KPI ", "error ", err.Error())
 		return nil, err
 	}
 	return &result, nil
@@ -108,13 +108,13 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 		url := fmt.Sprintf("%s/waterfall/%s", planningUrl, user.GetID().Hex())
 
 		overview, err := planningGetWaterfall(h, url)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Error fetching user's waterfall", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Error fetching user's waterfall", err.Error())
 		}
 
 		accountSeries := make(map[string]Series)

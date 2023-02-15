@@ -43,14 +43,14 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 
 		linkTokenResp, err := plaidClient.LinkTokenCreate(input.Email, input.Purpose)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to create link token", "data": err})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to create link token", "data": err.Error()})
 		}
 
 		CreateCookie(c, fmt.Sprintf("%v_link_token", input.Email), linkTokenResp.Token)
 		CreateCookie(c, input.Email, linkTokenResp.UserId)
 		id, err := primitive.ObjectIDFromHex(linkTokenResp.UserId)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get ObjectId from Hex", "data": err})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get ObjectId from Hex", "data": err.Error()})
 		}
 
 		plaidClient.SetLinkToken(&models.Token{
@@ -87,7 +87,7 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 	return func(c *fiber.Ctx) error {
 		var input Input
 		if err := c.BodyParser(&input); err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to parse input", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to parse input", err.Error())
 		}
 		if strings.HasPrefix(input.Email, "public") {
 			temp := input.Email
@@ -99,12 +99,12 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 
 		user, err := plaidClient.GetUser(input.Email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get user for token", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get user for token", err.Error())
 		}
 
 		token, err := plaidClient.ExchangePublicToken(plaidClient.C, input.PublicToken)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to exchange for token", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to exchange for token", err.Error())
 		}
 
 		token.User = user
@@ -116,12 +116,12 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 		// dbToken, err := plaidClient.GetUserToken(ctx, user)
 		// if err == mongo.ErrNoDocuments || c.Method() == http.MethodPost {
 		if err = plaidClient.SaveToken(token); err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to save token", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to save token", err.Error())
 		}
 
 		err = GetandSaveAccountDetails(plaidClient, token, c)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get and save account details", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get and save account details", err.Error())
 		}
 		// } else {
 		// 	if err = plaidClient.UpdateToken(ctx, dbToken.ID, token.Value, token.ItemId); err != nil {
@@ -135,7 +135,7 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 func GetandSaveAccountDetails(plaidClient *client.PlaidClient, token *models.Token, c *fiber.Ctx) error {
 	accountDetails, err := plaidClient.GetAccountDetails(token)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get account details", "data": err})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get account details", "data": err.Error()})
 	}
 
 	accounts := accountDetails.Accounts
@@ -146,7 +146,7 @@ func GetandSaveAccountDetails(plaidClient *client.PlaidClient, token *models.Tok
 		req := &models.CreateAccountRequest{Account: account}
 		dbAccount, err := plaidClient.CreateAccount(plaidClient.C, req)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account account", "data": err})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account account", "data": err.Error()})
 		}
 		plaidAccToDBAccId[dbAccount.PlaidAccountId] = dbAccount.ID.Hex()
 	}
@@ -158,7 +158,7 @@ func GetandSaveAccountDetails(plaidClient *client.PlaidClient, token *models.Tok
 			req := &models.CreateTransactionRequest{Transaction: transaction}
 			_, err = plaidClient.CreateTransaction(plaidClient.C, req)
 			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account transaction", "data": err})
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account transaction", "data": err.Error()})
 			}
 		}
 	}
@@ -170,7 +170,7 @@ func ArePlaidAccountsLinked(plaidClient *client.PlaidClient) func(c *fiber.Ctx) 
 		email := c.Params("email")
 		user, err := plaidClient.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		type Exist struct {
@@ -180,11 +180,11 @@ func ArePlaidAccountsLinked(plaidClient *client.PlaidClient) func(c *fiber.Ctx) 
 
 		debitAcc, err := plaidClient.IsDebitAccountLinked(user.GetID())
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's credit accounts", "data": err})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's credit accounts", "data": err.Error()})
 		}
 		creditAcc, err := plaidClient.IsCreditAccountLinked(user.GetID())
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's credit accounts", "data": err})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's credit accounts", "data": err.Error()})
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": Exist{debitAcc.Status, creditAcc.Status}})
 	}

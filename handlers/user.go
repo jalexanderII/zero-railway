@@ -23,7 +23,7 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		nUser := new(models.User)
 		if err := c.BodyParser(nUser); err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err)
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
 		}
 
 		user, err := h.GetUserByEmail(nUser.Email)
@@ -35,12 +35,12 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 				nUser.UpdatedAt = time.Now()
 				res, err := h.Db.InsertOne(h.C, nUser)
 				if err != nil {
-					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err)
+					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err.Error())
 				}
 				return FiberJsonResponse(c, fiber.StatusOK, "success", "new user created", res.InsertedID)
 			}
-			h.L.Error("[UserDB] Error checking if user already exists", "error", err)
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err)
+			h.L.Error("[UserDB] Error checking if user already exists", "error", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{user.ID})
 	}
@@ -58,7 +58,7 @@ func GetUser(h *Handler) func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "found user", user)
@@ -76,12 +76,12 @@ func GetUserByID(h *Handler) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		userId, err := primitive.ObjectIDFromHex(c.Params("id"))
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid user id", err)
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid user id", err.Error())
 		}
 		var user models.User
 		filter := bson.M{"_id": userId}
 		if err = h.Db.FindOne(h.C, filter).Decode(&user); err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user", user)
 	}
@@ -109,12 +109,12 @@ func UpdateUserPhone(h *Handler) func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		uUser := new(UpdateInput)
 		if err = c.BodyParser(uUser); err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err)
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
 		}
 		if user.PhoneNumber != uUser.PhoneNumber {
 			uUser.PhoneNumber = fmt.Sprintf("+1%s", uUser.PhoneNumber)
@@ -124,7 +124,7 @@ func UpdateUserPhone(h *Handler) func(c *fiber.Ctx) error {
 			update := bson.M{"$set": uUser}
 			res, err := h.Db.UpdateOne(h.C, filter, update)
 			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to update user", err)
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to update user", err.Error())
 			}
 			return FiberJsonResponse(c, fiber.StatusOK, "success", "updated user", UpdateResponse{res.ModifiedCount})
 		}
@@ -137,11 +137,11 @@ func CleanUp(h *Handler) func(c *fiber.Ctx) error {
 		var results []models.User
 		cursor, err := h.UserDb.Find(h.C, bson.D{})
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 		if err = cursor.All(h.C, &results); err != nil {
-			h.L.Error("[DB] Error getting all users", "error", err)
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			h.L.Error("[DB] Error getting all users", "error", err.Error())
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 		var count = 0
 		for _, user := range results {
@@ -153,7 +153,7 @@ func CleanUp(h *Handler) func(c *fiber.Ctx) error {
 					if err == nil {
 						count++
 					} else {
-						h.L.Error("[DB] Error deleting user", "error", err)
+						h.L.Error("[DB] Error deleting user", "error", err.Error())
 					}
 				} else {
 					h.L.Info("[DB] Test mode, not deleting user", "user", user.PhoneNumber)

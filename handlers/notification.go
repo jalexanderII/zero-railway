@@ -31,8 +31,8 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 		}
 		upcomingPaymentActionsAllUsers, err := planningGetAllUpcomingPaymentActions(h, url, paymentActionsRequest)
 		if err != nil {
-			h.L.Error("error listing upcoming PaymentActions", err)
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing upcoming PaymentActions", err)
+			h.L.Error("error listing upcoming PaymentActions", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing upcoming PaymentActions", err.Error())
 		}
 		userIds := upcomingPaymentActionsAllUsers.UserIds
 		paymentActions := upcomingPaymentActionsAllUsers.PaymentActions
@@ -58,11 +58,11 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 			id, _ := primitive.ObjectIDFromHex(userId)
 			userAccs, err := GetUserAccounts(h, &id)
 			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing accounts", err)
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing accounts", err.Error())
 			}
 			totalDebit := GetDebitAccountBalance(h, &id)
 			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting debit balance", err)
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting debit balance", err.Error())
 			}
 
 			if totalDebit.CurrentBalance < totalLiab {
@@ -93,8 +93,8 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 			}
 			resp, err := notifySendSMS(h, smsUrl, sendSMSRequest)
 			if err != nil {
-				h.L.Error("error sending SMS", err)
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error sending SMS", err)
+				h.L.Error("error sending SMS", err.Error())
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error sending SMS", err.Error())
 			}
 			resps = append(resps, *resp)
 		}

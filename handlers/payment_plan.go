@@ -28,13 +28,13 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		currentDate := time.Now().Format("01.02.2006")
 		var input models.GetPaymentPlanRequest
 		if err = c.BodyParser(&input); err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request", err)
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request", err.Error())
 		}
 		input.UserId = user.GetID().Hex()
 
@@ -49,7 +49,7 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 		}
 		paymentPlanResponse, err := GetPaymentPlan(h, &models.GetPaymentPlanRequest{AccountInfo: accountInfoList, UserId: input.UserId, MetaData: metaData, SavePlan: input.SavePlan}, planningUrl)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan", err.Error())
 		}
 
 		responsePaymentPlans := make([]models.PaymentPlan, len(paymentPlanResponse.PaymentPlans))
@@ -77,7 +77,7 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())

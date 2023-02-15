@@ -19,7 +19,7 @@ func GetUsersTransactions(h *Handler) func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		transactions := make([]models.Transaction, 0)
@@ -27,11 +27,11 @@ func GetUsersTransactions(h *Handler) func(c *fiber.Ctx) error {
 		opts := options.Find().SetSkip(0).SetLimit(1000)
 		cursor, err := h.Db.Find(h.C, filter, opts)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "transactions for that user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "transactions for that user not found", err.Error())
 		}
 
 		if err = cursor.All(h.C, &transactions); err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to unmarshall transactions", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to unmarshall transactions", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user transactions", transactions)
 	}

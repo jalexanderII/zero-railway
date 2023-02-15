@@ -21,12 +21,12 @@ func GetUsersAccountsByEmail(h *Handler) func(c *fiber.Ctx) error {
 
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
 		accounts, err := GetUserAccounts(h, &user.ID)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user accounts", accounts)
 	}
@@ -43,11 +43,11 @@ func GetUsersAccountsByUserID(h *Handler) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		userId, err := primitive.ObjectIDFromHex(c.Params("user_id"))
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid user id", err)
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid user id", err.Error())
 		}
 		accounts, err := GetUserAccounts(h, &userId)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user accounts", accounts)
 	}
@@ -64,12 +64,12 @@ func GetAccount(h *Handler) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		accId, err := primitive.ObjectIDFromHex(c.Params("acc_id"))
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid account id", err)
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid account id", err.Error())
 		}
 		var account models.Account
 		filter := bson.M{"_id": accId}
 		if err = h.Db.FindOne(h.C, filter).Decode(&account); err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "account not found", err)
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "account not found", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "account", account)
 	}
