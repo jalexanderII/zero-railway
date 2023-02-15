@@ -9,7 +9,7 @@ import (
 )
 
 type ListPaymentPlanResponse struct {
-	PaymentPlans []models.PaymentPlanS `json:"payment_plans"`
+	PaymentPlans []models.PaymentPlan `json:"payment_plans"`
 }
 
 type KPI struct {
@@ -53,7 +53,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
 		plans, err := planningGetUserPaymentPlans(h, url)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans for KPI not found", err.Error())
 		}
 		for _, plan := range plans.PaymentPlans {
 			totalPlanAmount += plan.Amount
@@ -69,6 +69,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 func planningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanResponse, error) {
 	resp, err := h.H.Get(url)
 	if err != nil {
+		h.L.Error("Error fetching user payment plans ", "error ", err)
 		return nil, err
 	}
 
@@ -76,6 +77,7 @@ func planningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanRespon
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
+		h.L.Error("Error decoding user payment plans for KPI ", "error ", err)
 		return nil, err
 	}
 	return &result, nil

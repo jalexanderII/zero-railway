@@ -81,13 +81,10 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		}
 
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
-		res, err := planningGetPaymentPlans(h, url)
+		res, err := planningGetUserPaymentPlans(h, url)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err.Error())
 		}
-		h.L.Info("Got user payment plans", res)
-		h.L.Info("Got user payment plans", res.PaymentPlans)
-
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user payment plans", res.PaymentPlans)
 	}
 }
@@ -103,13 +100,13 @@ func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 	return func(c *fiber.Ctx) error {
 		// get the id from the request params
 		id := c.Params("id")
-		url := fmt.Sprintf("%s/paymentplan", planningUrl)
-		res, err := planningDeletePaymentPlan(h, url, &models.DeletePaymentPlanRequest{PaymentPlanId: id})
+		url := fmt.Sprintf("%s/paymentplan/%s", planningUrl, id)
+		res, err := planningDeletePaymentPlan(h, url)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to delete payment plan", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
 		}
 		if res.Status != models.DELETE_STATUS_SUCCESS {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to delete payment plan", res.Status)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "delete payment plan status failed", res.Status)
 		}
 
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "payment plan deleted", res)
@@ -172,26 +169,8 @@ func planningCreatePaymentPlan(h *Handler, url string, req *models.CreatePayment
 	return &result, nil
 }
 
-func planningGetPaymentPlans(h *Handler, url string) (*models.ListPaymentPlanResponse, error) {
-	resp, err := h.H.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var result models.ListPaymentPlanResponse
-
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-func planningDeletePaymentPlan(h *Handler, url string, req *models.DeletePaymentPlanRequest) (*models.DeletePaymentPlanResponse, error) {
-	body, err := json.Marshal(req)
-	if err != nil {
-		log.Fatal(err)
-	}
+func planningDeletePaymentPlan(h *Handler, url string) (*models.DeletePaymentPlanResponse, error) {
+	var body []byte
 
 	r, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(body))
 	if err != nil {
