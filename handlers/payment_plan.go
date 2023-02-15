@@ -80,11 +80,12 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
 		}
 
-		url := fmt.Sprintf("%s/paymentplans", planningUrl)
-		res, err := planningGetPaymentPlans(h, url, &models.ListPaymentPlanRequest{UserId: user.GetID()})
+		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
+		res, err := PlanningGetUserPaymentPlans(h, url)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to delete payment plan", err)
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
 		}
+
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user payment plans", res.PaymentPlans)
 	}
 }
@@ -161,26 +162,6 @@ func planningCreatePaymentPlan(h *Handler, url string, req *models.CreatePayment
 	}
 
 	var result models.PaymentPlanResponse
-
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-func planningGetPaymentPlans(h *Handler, url string, req *models.ListPaymentPlanRequest) (*models.ListPaymentPlanResponse, error) {
-	body, err := json.Marshal(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		panic(err)
-	}
-
-	var result models.ListPaymentPlanResponse
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
