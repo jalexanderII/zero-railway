@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -63,6 +64,55 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 	}
 }
 
+// @Summary Get payment plans for a single user.
+// @Description fetch all payment plans for the user by email.
+// @Tags paymentplan
+// @Param email path string true "User email"
+// @Produce json
+// @Success 200 {object} []models.PaymentPlan
+// @Router /paymentplan/:email [get]
+func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		email := c.Params("email")
+
+		user, err := h.GetUserByEmail(email)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err)
+		}
+
+		url := fmt.Sprintf("%s/paymentplans", planningUrl)
+		res, err := planningGetPaymentPlans(h, url, &models.ListPaymentPlanRequest{UserId: user.GetID()})
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to delete payment plan", err)
+		}
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "user payment plans", res.PaymentPlans)
+	}
+}
+
+// @Summary Delete a single PaymentPlan.
+// @Description delete a single PaymentPlan by id.
+// @Tags paymentplan
+// @Param id path string true "PaymentPlan ID"
+// @Produce json
+// @Success 200 {object} models.DeletePaymentPlanResponse
+// @Router /paymentplan/:id [delete]
+func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		// get the id from the request params
+		id := c.Params("id")
+		url := fmt.Sprintf("%s/paymentplan", planningUrl)
+		res, err := planningDeletePaymentPlan(h, url, &models.DeletePaymentPlanRequest{PaymentPlanId: id})
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to delete payment plan", err)
+		}
+		if res.Status != models.DELETE_STATUS_SUCCESS {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to delete payment plan", res.Status)
+		}
+
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "payment plan deleted", res)
+	}
+}
+
 func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl string) (*models.PaymentPlanResponse, error) {
 	// create payment task from user inputs
 	paymentTasks := make([]models.PaymentTask, len(in.AccountInfo))
@@ -111,6 +161,51 @@ func planningCreatePaymentPlan(h *Handler, url string, req *models.CreatePayment
 	}
 
 	var result models.PaymentPlanResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func planningGetPaymentPlans(h *Handler, url string, req *models.ListPaymentPlanRequest) (*models.ListPaymentPlanResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		panic(err)
+	}
+
+	var result models.ListPaymentPlanResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func planningDeletePaymentPlan(h *Handler, url string, req *models.DeletePaymentPlanRequest) (*models.DeletePaymentPlanResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(body))
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := h.H.Do(r)
+	if err != nil {
+		panic(err)
+	}
+
+	var result models.DeletePaymentPlanResponse
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {

@@ -114,6 +114,7 @@ func (p *PlaidClient) LinkTokenCreate(email, purpose string) (*models.CreateLink
 	}
 	request := plaid.NewLinkTokenCreateRequest(p.Name, "en", p.CountryCodes, user)
 	request.SetRedirectUri(p.RedirectURL)
+	request.SetWebhook("http://localhost:3000/plaid/exchange")
 
 	p.L.Infof("The link purpose is %+v", purp)
 	if purp == models.PURPOSE_DEBIT {

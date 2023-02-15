@@ -1,8 +1,9 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PlanType int32
@@ -47,6 +48,16 @@ const (
 	PaymentActionStatus_PAYMENT_ACTION_STATUS_COMPLETED PaymentActionStatus = 2
 	// payment defaulted
 	PaymentActionStatus_PAYMENT_ACTION_STATUS_IN_DEFAULT PaymentActionStatus = 3
+)
+
+type DeleteStatus int32
+
+const (
+	DELETE_STATUS_UNKNOWN     DeleteStatus = 0
+	DELETE_STATUS_PENDING     DeleteStatus = 1
+	DELETE_STATUS_IN_PROGRESS DeleteStatus = 2
+	DELETE_STATUS_SUCCESS     DeleteStatus = 3
+	DELETE_STATUS_FAILED      DeleteStatus = 3
 )
 
 type PaymentPlan struct {
@@ -138,4 +149,21 @@ type SendSMSRequest struct {
 type SendSMSResponse struct {
 	Successful   bool   `json:"successful,omitempty"`
 	ErrorMessage string `json:"error_message,omitempty"`
+}
+
+type DeletePaymentPlanRequest struct {
+	PaymentPlanId string `json:"payment_plan_id,omitempty"`
+}
+
+type DeletePaymentPlanResponse struct {
+	Status      DeleteStatus `json:"status,omitempty"`
+	PaymentPlan *PaymentPlan `json:"payment_plan,omitempty"`
+}
+
+type ListPaymentPlanRequest struct {
+	UserId *primitive.ObjectID `json:"user_id"`
+}
+
+type ListPaymentPlanResponse struct {
+	PaymentPlans []*PaymentPlan `json:"payment_plans,omitempty"`
 }
