@@ -51,7 +51,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 
 		var totalPlanAmount = 0.0
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
-		plans, err := PlanningGetUserPaymentPlans(h, url)
+		plans, err := planningGetUserPaymentPlans(h, url)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
 		}
@@ -66,7 +66,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	}
 }
 
-func PlanningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanResponse, error) {
+func planningGetUserPaymentPlans(h *Handler, url string) (*ListPaymentPlanResponse, error) {
 	resp, err := h.H.Get(url)
 	if err != nil {
 		return nil, err

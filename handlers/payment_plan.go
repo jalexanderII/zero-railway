@@ -81,10 +81,12 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		}
 
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())
-		res, err := PlanningGetUserPaymentPlans(h, url)
+		res, err := planningGetUserPaymentPlans(h, url)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "user payment plans not found", err)
 		}
+		h.L.Info("Got user payment plans", res)
+		h.L.Info("Got user payment plans", res.PaymentPlans)
 
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "user payment plans", res.PaymentPlans)
 	}
@@ -162,6 +164,21 @@ func planningCreatePaymentPlan(h *Handler, url string, req *models.CreatePayment
 	}
 
 	var result models.PaymentPlanResponse
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func planningGetUserPaymentPlans(h *Handler, url string) (*models.ListPaymentPlanResponse, error) {
+	resp, err := h.H.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var result models.ListPaymentPlanResponse
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
