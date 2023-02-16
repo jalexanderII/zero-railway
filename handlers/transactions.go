@@ -24,7 +24,7 @@ func GetUsersTransactions(h *Handler) func(c *fiber.Ctx) error {
 
 		transactions := make([]models.Transaction, 0)
 		filter := bson.M{"user_id": user.ID}
-		opts := options.Find().SetSkip(0).SetLimit(50)
+		opts := options.Find().SetSkip(0).SetLimit(1000)
 		cursor, err := h.Db.Find(h.C, filter, opts)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "transactions for that user not found", err.Error())
