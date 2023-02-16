@@ -136,10 +136,10 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 					accName = n
 				}
 				if series, ok := accountSeries[accId]; ok {
-					series.Data[idx] = float32(value)
+					series.Data[idx+1] = float32(value)
 				} else {
 					accountSeries[accId] = Series{Name: accName, AccID: accId, Data: make([]float32, 12)}
-					accountSeries[accId].Data[idx] = float32(value)
+					accountSeries[accId].Data[idx+1] = float32(value)
 				}
 			}
 		}
