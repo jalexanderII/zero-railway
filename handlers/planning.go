@@ -92,8 +92,9 @@ type WaterfallOverviewResponse struct {
 }
 
 type Series struct {
-	Name string    `json:"name"`
-	Data []float32 `json:"data"`
+	Name  string    `json:"name"`
+	Data  []float32 `json:"data"`
+	AccID string    `json:"acc_id"`
 }
 
 // @Summary Get user waterfall data.
@@ -110,6 +111,16 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
+
+		accounts, err := GetUserAccounts(h, user.GetID())
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err.Error())
+		}
+		accountIdToName := make(map[string]string, len(accounts))
+		for _, account := range accounts {
+			accountIdToName[account.ID.Hex()] = account.OfficialName
+		}
+
 		url := fmt.Sprintf("%s/waterfall/%s", planningUrl, user.GetID().Hex())
 
 		overview, err := planningGetWaterfall(h, url)
@@ -119,15 +130,20 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 
 		accountSeries := make(map[string]Series)
 		for idx, waterfallMonth := range overview.MonthlyWaterfall {
-			for name, value := range waterfallMonth.AccountToAmounts {
-				if series, ok := accountSeries[name]; ok {
+			for accId, value := range waterfallMonth.AccountToAmounts {
+				accName := accId
+				if n, ok := accountIdToName[accId]; ok {
+					accName = n
+				}
+				if series, ok := accountSeries[accId]; ok {
 					series.Data[idx] = float32(value)
 				} else {
-					accountSeries[name] = Series{Name: name, Data: make([]float32, 12)}
-					accountSeries[name].Data[idx] = float32(value)
+					accountSeries[accId] = Series{Name: accName, AccID: accId, Data: make([]float32, 12)}
+					accountSeries[accId].Data[idx] = float32(value)
 				}
 			}
 		}
+
 		var response []Series
 		for _, series := range accountSeries {
 			response = append(response, series)
