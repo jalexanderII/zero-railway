@@ -40,7 +40,9 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 
 		totalCredit := 0.0
 		for _, account := range accounts {
-			totalCredit += account.CurrentBalance
+			if account.Type == "credit" {
+				totalCredit += account.CurrentBalance
+			}
 		}
 
 		var totalDebit = 0.0
