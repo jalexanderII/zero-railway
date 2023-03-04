@@ -146,13 +146,21 @@ func CreateUserClerkWebhook(h *Handler) func(c *fiber.Ctx) error {
 		if err := c.BodyParser(nUserWebhook); err != nil {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
 		}
-		nUser := nUserWebhook.Data.NewDBUser()
-		h.L.Info("[ClerkWebhook] Create User Body", nUser)
-		res, err := h.Db.InsertOne(h.C, nUser)
-		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err.Error())
+		user, err := h.GetUserByEmail(nUserWebhook.Data.GetEmail())
+		if user == nil || err != nil {
+			// ErrNoDocuments means that the filter did not match any documents in the collection
+			if user == nil || err == mongo.ErrNoDocuments {
+				nUser := nUserWebhook.Data.NewDBUser()
+				res, err := h.Db.InsertOne(h.C, nUser)
+				if err != nil {
+					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err.Error())
+				}
+				return FiberJsonResponse(c, fiber.StatusOK, "success", "new user created", res.InsertedID)
+			}
+			h.L.Error("[UserDB] Error checking if user already exists", "error", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err.Error())
 		}
-		return FiberJsonResponse(c, fiber.StatusOK, "success", "new user created", res.InsertedID)
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{user.ID})
 	}
 }
 
