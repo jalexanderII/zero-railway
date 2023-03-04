@@ -54,7 +54,7 @@ type ClerkUser struct {
 	LastSignInAt          int64         `json:"last_sign_in_at"`
 	Object                string        `json:"object"`
 	PasswordEnabled       bool          `json:"password_enabled"`
-	PhoneNumbers          []interface{} `json:"phone_numbers"`
+	PhoneNumbers          []string      `json:"phone_numbers"`
 	PrimaryEmailAddressId string        `json:"primary_email_address_id"`
 	PrimaryPhoneNumberId  interface{}   `json:"primary_phone_number_id"`
 	PrimaryWeb3WalletId   interface{}   `json:"primary_web3_wallet_id"`
@@ -69,15 +69,15 @@ type ClerkUser struct {
 }
 
 func (c ClerkUser) GetEmail() string {
-	if c.EmailAddresses[0].EmailAddress != "" {
+	if len(c.EmailAddresses) > 0 && c.EmailAddresses[0].EmailAddress != "" {
 		return c.EmailAddresses[0].EmailAddress
 	}
 	return ""
 }
 
 func (c ClerkUser) GetPhoneNumber() string {
-	if c.PhoneNumbers[0] != nil {
-		return c.PhoneNumbers[0].(string)
+	if len(c.PhoneNumbers) > 0 && c.PhoneNumbers[0] != "" {
+		return c.PhoneNumbers[0]
 	}
 	return ""
 }
