@@ -55,6 +55,10 @@ func SetupRoutes(app *fiber.App) {
 	users.Post("/", handlers.CreateUser(userHandler))
 	users.Get("/:email", handlers.GetUser(userHandler))
 	users.Put("/:email", handlers.UpdateUserPhone(userHandler))
+	clerk := users.Group("/clerk")
+	clerk.Post("/", handlers.CreateUserClerkWebhook(userHandler))
+	// clerk.Delete("/", handlers.DeleteUserClerkWebhook(userHandler))
+	// clerk.Patch("/", handlers.UpdateUserClerkWebhook(userHandler))
 
 	planning := api.Group("/planning")
 	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL))
