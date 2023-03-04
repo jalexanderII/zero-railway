@@ -45,27 +45,27 @@ type ClerkUser struct {
 			Strategy string `json:"strategy"`
 		} `json:"verification"`
 	} `json:"email_addresses"`
-	ExternalAccounts      []interface{} `json:"external_accounts"`
-	ExternalId            string        `json:"external_id"`
-	FirstName             string        `json:"first_name"`
-	Gender                string        `json:"gender"`
-	Id                    string        `json:"id"`
-	LastName              string        `json:"last_name"`
-	LastSignInAt          int64         `json:"last_sign_in_at"`
-	Object                string        `json:"object"`
-	PasswordEnabled       bool          `json:"password_enabled"`
-	PhoneNumbers          []interface{} `json:"phone_numbers"`
-	PrimaryEmailAddressId string        `json:"primary_email_address_id"`
-	PrimaryPhoneNumberId  interface{}   `json:"primary_phone_number_id"`
-	PrimaryWeb3WalletId   interface{}   `json:"primary_web3_wallet_id"`
-	PrivateMetadata       struct{}      `json:"private_metadata"`
-	ProfileImageUrl       string        `json:"profile_image_url"`
-	PublicMetadata        struct{}      `json:"public_metadata"`
-	TwoFactorEnabled      bool          `json:"two_factor_enabled"`
-	UnsafeMetadata        struct{}      `json:"unsafe_metadata"`
-	UpdatedAt             int64         `json:"updated_at"`
-	Username              interface{}   `json:"username"`
-	Web3Wallets           []interface{} `json:"web3_wallets"`
+	ExternalAccounts      []interface{}      `json:"external_accounts"`
+	ExternalId            string             `json:"external_id"`
+	FirstName             string             `json:"first_name"`
+	Gender                string             `json:"gender"`
+	Id                    string             `json:"id"`
+	LastName              string             `json:"last_name"`
+	LastSignInAt          int64              `json:"last_sign_in_at"`
+	Object                string             `json:"object"`
+	PasswordEnabled       bool               `json:"password_enabled"`
+	PhoneNumbers          []ClerkPhoneNumber `json:"phone_numbers"`
+	PrimaryEmailAddressId string             `json:"primary_email_address_id"`
+	PrimaryPhoneNumberId  interface{}        `json:"primary_phone_number_id"`
+	PrimaryWeb3WalletId   interface{}        `json:"primary_web3_wallet_id"`
+	PrivateMetadata       struct{}           `json:"private_metadata"`
+	ProfileImageUrl       string             `json:"profile_image_url"`
+	PublicMetadata        struct{}           `json:"public_metadata"`
+	TwoFactorEnabled      bool               `json:"two_factor_enabled"`
+	UnsafeMetadata        struct{}           `json:"unsafe_metadata"`
+	UpdatedAt             int64              `json:"updated_at"`
+	Username              interface{}        `json:"username"`
+	Web3Wallets           []interface{}      `json:"web3_wallets"`
 }
 
 func (c ClerkUser) GetEmail() string {
@@ -76,8 +76,8 @@ func (c ClerkUser) GetEmail() string {
 }
 
 func (c ClerkUser) GetPhoneNumber() string {
-	if len(c.PhoneNumbers) > 0 && c.PhoneNumbers[0] != "" {
-		return c.PhoneNumbers[0].(string)
+	if len(c.PhoneNumbers) > 0 && c.PhoneNumbers[0].PhoneNumber != "" {
+		return c.PhoneNumbers[0].PhoneNumber
 	}
 	return ""
 }
@@ -112,4 +112,21 @@ type ClerkUserDeleted struct {
 	} `json:"data"`
 	Object string `json:"object"`
 	Type   string `json:"type"`
+}
+
+type ClerkPhoneNumber struct {
+	BackupCodes             interface{}   `json:"backup_codes"`
+	DefaultSecondFactor     bool          `json:"default_second_factor"`
+	Id                      string        `json:"id"`
+	LinkedTo                []interface{} `json:"linked_to"`
+	Object                  string        `json:"object"`
+	PhoneNumber             string        `json:"phone_number"`
+	Reserved                bool          `json:"reserved"`
+	ReservedForSecondFactor bool          `json:"reserved_for_second_factor"`
+	Verification            struct {
+		Attempts int    `json:"attempts"`
+		ExpireAt int64  `json:"expire_at"`
+		Status   string `json:"status"`
+		Strategy string `json:"strategy"`
+	} `json:"verification"`
 }
