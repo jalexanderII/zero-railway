@@ -82,10 +82,20 @@ func (c ClerkUser) GetPhoneNumber() string {
 	return ""
 }
 
+func (c ClerkUser) GetUserName() string {
+	if c.Username != nil {
+		return c.Username.(string)
+	}
+	if c.FirstName != "" && c.LastName != "" {
+		return c.FirstName + "_" + c.LastName
+	}
+	return ""
+}
+
 func (c ClerkUser) NewDBUser() User {
 	return User{
 		ID:          primitive.NewObjectID(),
-		Username:    c.Username.(string),
+		Username:    c.GetUserName(),
 		Email:       c.GetEmail(),
 		PhoneNumber: c.GetPhoneNumber(),
 		ClerkId:     c.Id,
