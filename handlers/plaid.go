@@ -93,7 +93,6 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 		if err := c.BodyParser(&input); err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to parse input", err.Error())
 		}
-		plaidClient.L.Info("input: ", input)
 		if strings.HasPrefix(input.Email, "public") {
 			temp := input.Email
 			input.Email = input.PublicToken
