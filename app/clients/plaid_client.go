@@ -28,6 +28,7 @@ var environments = map[string]plaid.Environment{
 var environmentSecret = map[string]string{
 	"sandbox":     "PLAID_SECRET_SANDBOX",
 	"development": "PLAID_SECRET_DEV",
+	"production":  "PLAID_SECRET_PROD",
 }
 
 var purposeToAccountFilter = map[models.Purpose]plaid.LinkTokenAccountFilters{
@@ -114,7 +115,6 @@ func (p *PlaidClient) LinkTokenCreate(email, purpose string) (*models.CreateLink
 	}
 	request := plaid.NewLinkTokenCreateRequest(p.Name, "en", p.CountryCodes, user)
 	request.SetRedirectUri(p.RedirectURL)
-	request.SetWebhook("http://localhost:3000/plaid/exchange")
 
 	p.L.Infof("The link purpose is %+v", purp)
 	if purp == models.PURPOSE_DEBIT {
