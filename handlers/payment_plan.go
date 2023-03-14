@@ -23,7 +23,7 @@ import (
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
 // @Router /paymentplan/:email [post]
-func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
@@ -52,6 +52,11 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan", err.Error())
 		}
 
+		err = MarkTrxnAsPlanned(transactionHandler, input.AccountInfo)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan", err.Error())
+		}
+
 		responsePaymentPlans := make([]models.PaymentPlan, len(paymentPlanResponse.PaymentPlans))
 		for idx, paymentPlan := range paymentPlanResponse.PaymentPlans {
 			pp := CreateResponsePaymentPlan(paymentPlan)
@@ -62,6 +67,24 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "payment plan created", responsePaymentPlans)
 	}
+}
+
+func MarkTrxnAsPlanned(h *Handler, info []models.AccountInfo) error {
+	for _, accountInfo := range info {
+		for _, trxnId := range accountInfo.TransactionIds {
+			oid, err := primitive.ObjectIDFromHex(trxnId)
+			if err != nil {
+				return err
+			}
+			filter := bson.M{"_id": oid}
+			update := bson.M{"$set": bson.M{"in_plan": true}}
+			_, err = h.Db.UpdateOne(h.C, filter, update)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // @Summary Get payment plans for a single user.
