@@ -32,6 +32,10 @@ func Link(c *fiber.Ctx) error {
 
 func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
+		type LinkTokenResponse struct {
+			Token string `json:"link_token"`
+		}
+
 		type Input struct {
 			Email   string `json:"email"`
 			Purpose string `json:"purpose"`
@@ -43,22 +47,22 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 
 		linkTokenResp, err := plaidClient.LinkTokenCreate(input.Email, input.Purpose)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to create link token", "data": err.Error()})
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to create link token", err.Error())
 		}
 
 		CreateCookie(c, fmt.Sprintf("%v_link_token", input.Email), linkTokenResp.Token)
 		CreateCookie(c, input.Email, linkTokenResp.UserId)
 		id, err := primitive.ObjectIDFromHex(linkTokenResp.UserId)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get ObjectId from Hex", "data": err.Error()})
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get ObjectId from Hex", err.Error())
 		}
 
 		plaidClient.SetLinkToken(&models.Token{
 			User:  &models.User{ID: id, Email: input.Email},
 			Value: linkTokenResp.Token,
 		})
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "message": fmt.Sprintf("Successfully received link token from plaid with %+v purpose", input.Purpose), "link_token": linkTokenResp.Token})
+		msg := fmt.Sprintf("Successfully received link token from plaid with %+v purpose", input.Purpose)
+		return FiberJsonResponse(c, fiber.StatusOK, "success", msg, LinkTokenResponse{Token: linkTokenResp.Token})
 	}
 }
 
