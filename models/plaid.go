@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+
 	"github.com/plaid/plaid-go/plaid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -51,20 +52,9 @@ type TransactionsResponse struct {
 	Transactions []plaid.Transaction `json:"transactions,omitempty"`
 }
 
-type PlaidMetaData struct {
-	Institution struct {
-		Name          string `json:"name"`
-		InstitutionId string `json:"institution_id"`
-	} `json:"institution"`
-	Accounts []struct {
-		Id                 string `json:"id"`
-		Name               string `json:"name"`
-		Mask               string `json:"mask"`
-		Type               string `json:"type"`
-		Subtype            string `json:"subtype"`
-		VerificationStatus string `json:"verification_status,omitempty"`
-	} `json:"accounts"`
-	LinkSessionId string `json:"link_session_id"`
+type PlaidInstitution struct {
+	Name          string `json:"name"`
+	InstitutionId string `json:"institution_id"`
 }
 
 type AccountDetailsResponse struct {

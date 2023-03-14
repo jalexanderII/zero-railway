@@ -67,10 +67,10 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 }
 
 type Input struct {
-	Email       string               `json:"email"`
-	PublicToken string               `json:"public_token"`
-	Purpose     models.Purpose       `json:"purpose"`
-	MetaData    models.PlaidMetaData `json:"meta_data,omitempty"`
+	Email       string                  `json:"email"`
+	PublicToken string                  `json:"public_token"`
+	Purpose     models.Purpose          `json:"purpose"`
+	Institution models.PlaidInstitution `json:"institution,omitempty"`
 }
 
 type Response struct {
@@ -93,13 +93,14 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 		if err := c.BodyParser(&input); err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to parse input", err.Error())
 		}
+		plaidClient.L.Info("input: ", input)
 		if strings.HasPrefix(input.Email, "public") {
 			temp := input.Email
 			input.Email = input.PublicToken
 			input.PublicToken = temp
 			plaidClient.L.Info("INPUT: ", input)
 		}
-		plaidClient.L.Info("METADATA: ", input.MetaData)
+		plaidClient.L.Info("METADATA: ", input.Institution)
 
 		user, err := plaidClient.GetUser(input.Email)
 		if err != nil {
@@ -112,8 +113,8 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 		}
 
 		token.User = user
-		token.Institution = input.MetaData.Institution.Name
-		token.InstitutionID = input.MetaData.Institution.InstitutionId
+		token.Institution = input.Institution.Name
+		token.InstitutionID = input.Institution.InstitutionId
 		token.Purpose = input.Purpose
 		plaidClient.L.Info("TOKEN: ", token)
 

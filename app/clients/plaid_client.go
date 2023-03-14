@@ -345,6 +345,7 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 			DetailedCategory:    transaction.GetPersonalFinanceCategory().Detailed,
 			PlaidAccountId:      transaction.AccountId,
 			PlaidTransactionId:  transaction.TransactionId,
+			InPlan:              false,
 		})
 
 	}

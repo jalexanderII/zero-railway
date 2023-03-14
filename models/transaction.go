@@ -42,4 +42,5 @@ type Transaction struct {
 	DetailedCategory     string              `json:"detailed_category" bson:"detailed_category"`
 	UpdatedAt            time.Time           `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 	CreatedAt            time.Time           `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	InPlan               bool                `json:"in_plan" bson:"in_plan"`
 }
