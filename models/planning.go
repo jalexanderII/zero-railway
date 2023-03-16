@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -116,7 +114,7 @@ type CreatePaymentPlanRequest struct {
 }
 
 type GetAllUpcomingPaymentActionsRequest struct {
-	Date time.Time `json:"date,omitempty"`
+	Date string `json:"date,omitempty"`
 }
 
 type GetAllUpcomingPaymentActionsResponse struct {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	client "github.com/jalexanderII/zero-railway/app/clients"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,17 +24,18 @@ type SendSMSResponse struct {
 // @Produce json
 // @Success 200 {object} []models.SendSMSResponse
 // @Router /notify [get]
-func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		url := fmt.Sprintf("%s/paymentactions", planningUrl)
 		paymentActionsRequest := &models.GetAllUpcomingPaymentActionsRequest{
-			Date: time.Now(),
+			Date: time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
 		}
 		upcomingPaymentActionsAllUsers, err := planningGetAllUpcomingPaymentActions(h, url, paymentActionsRequest)
 		if err != nil {
 			h.L.Error("error listing upcoming PaymentActions", err.Error())
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing upcoming PaymentActions", err.Error())
 		}
+		h.L.Info("upcomingPaymentActionsAllUsers", upcomingPaymentActionsAllUsers)
 		userIds := upcomingPaymentActionsAllUsers.UserIds
 		paymentActions := upcomingPaymentActionsAllUsers.PaymentActions
 
@@ -66,9 +68,9 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 			}
 
 			if totalDebit.CurrentBalance < totalLiab {
-				userNotify[userId] = fmt.Sprintf("You are missing %v for tomorrows upcoming total payment of %v", totalLiab-totalDebit.CurrentBalance, totalLiab)
+				userNotify[userId] = fmt.Sprintf("You are missing $%v for tomorrows upcoming total payment of $%v", totalLiab-totalDebit.CurrentBalance, totalLiab)
 			} else {
-				userNotify[userId] = fmt.Sprintf("You are all setup for tomorrows total payment of %v", totalLiab)
+				userNotify[userId] = fmt.Sprintf("You are all setup for tomorrows total payment of $%v", totalLiab)
 			}
 			for accId, liab := range accLiab {
 				accName := ""
@@ -78,7 +80,7 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 						break
 					}
 				}
-				userNotify[userId] += fmt.Sprintf("\n%v: %v", accName, liab)
+				userNotify[userId] += fmt.Sprintf("\n For account %v: $%v", accName, liab)
 			}
 		}
 
@@ -86,15 +88,10 @@ func NotifyUsersUpcomingPaymentActions(h *Handler, planningUrl string) func(c *f
 		// send notifications to the appropriate user
 		for userId, message := range userNotify {
 			user, _ := h.GetUserByID(userId)
-			smsUrl := fmt.Sprintf("%s/notify", planningUrl)
-			sendSMSRequest := &models.SendSMSRequest{
-				PhoneNumber: user.PhoneNumber,
-				Message:     message,
-			}
-			resp, err := notifySendSMS(h, smsUrl, sendSMSRequest)
+			resp, err := tc.SendSMS(user.PhoneNumber, message)
 			if err != nil {
 				h.L.Error("error sending SMS", err.Error())
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error sending SMS", err.Error())
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error sending SMS", resp)
 			}
 			resps = append(resps, *resp)
 		}
@@ -114,26 +111,6 @@ func planningGetAllUpcomingPaymentActions(h *Handler, url string, req *models.Ge
 	}
 
 	var result models.GetAllUpcomingPaymentActionsResponse
-
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
-}
-
-func notifySendSMS(h *Handler, url string, req *models.SendSMSRequest) (*models.SendSMSResponse, error) {
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	var result models.SendSMSResponse
 
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {

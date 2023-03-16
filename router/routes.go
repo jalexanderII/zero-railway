@@ -21,6 +21,7 @@ func SetupRoutes(app *fiber.App) {
 	userHandler := handlers.NewHandler(os.Getenv("USER_COLLECTION"), l)
 	planningURL := os.Getenv("PLANNING_URL")
 	plaidClient := client.NewPlaidClient(os.Getenv("PLAID_COLLECTION"), l)
+	twilioClient := client.NewTwilioClient(l)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -72,5 +73,5 @@ func SetupRoutes(app *fiber.App) {
 	plaidEndpoints.Get("/linked/:email", handlers.ArePlaidAccountsLinked(plaidClient))
 
 	notificationEndpoints := api.Group("/notify")
-	notificationEndpoints.Get("/", handlers.NotifyUsersUpcomingPaymentActions(accountHandler, planningURL))
+	notificationEndpoints.Get("/", handlers.NotifyUsersUpcomingPaymentActions(twilioClient, accountHandler, planningURL))
 }

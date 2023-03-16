@@ -123,6 +123,7 @@ func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 	return func(c *fiber.Ctx) error {
 		// get the id from the request params
 		id := c.Params("id")
+
 		url := fmt.Sprintf("%s/paymentplan/%s", planningUrl, id)
 		res, err := planningDeletePaymentPlan(h, url)
 		if err != nil {
@@ -134,6 +135,24 @@ func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "payment plan deleted", res)
 	}
+}
+
+func MarkTrxnAsNotPlanned(h *Handler, info []models.AccountInfo) error {
+	for _, accountInfo := range info {
+		for _, trxnId := range accountInfo.TransactionIds {
+			oid, err := primitive.ObjectIDFromHex(trxnId)
+			if err != nil {
+				return err
+			}
+			filter := bson.M{"_id": oid}
+			update := bson.M{"$set": bson.M{"in_plan": false}}
+			_, err = h.Db.UpdateOne(h.C, filter, update)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl string) (*models.PaymentPlanResponse, error) {
