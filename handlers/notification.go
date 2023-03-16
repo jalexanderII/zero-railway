@@ -76,11 +76,13 @@ func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, plan
 				accName := ""
 				for _, acc := range userAccs {
 					if acc.ID.Hex() == accId {
-						accName = acc.Name
+						accName = acc.OfficialName
 						break
 					}
 				}
-				userNotify[userId] += fmt.Sprintf("\n For account %v: $%v", accName, liab)
+				startingStr := fmt.Sprintf("For account %v: $%v \n", accName, liab)
+				startingStr += userNotify[userId]
+				userNotify[userId] = startingStr
 			}
 		}
 
