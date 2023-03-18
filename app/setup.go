@@ -7,6 +7,7 @@ import (
 	"github.com/jalexanderII/zero-railway/router"
 )
 
+// SetupAndRunApp handle app and database start and graceful shutdown
 func SetupAndRunApp(port string) error {
 	// load env
 	err := config.LoadENV()

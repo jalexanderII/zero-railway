@@ -13,6 +13,7 @@ import (
 // Create a new instance of the logger.
 var l = logrus.New()
 
+// SetupRoutes establish all endpoints
 func SetupRoutes(app *fiber.App) {
 
 	accountHandler := handlers.NewHandler(os.Getenv("ACCOUNT_COLLECTION"), l)

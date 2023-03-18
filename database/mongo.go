@@ -38,9 +38,8 @@ func StartMongoDB() error {
 	database := os.Getenv("DATABASE")
 	if database == "" {
 		return errors.New("you must set your 'DATABASE' environmental variable")
-	} else {
-		dbName = database
 	}
+	dbName = database
 
 	// Perform connection creation operation only once.
 	mongoOnce.Do(func() {
