@@ -1,4 +1,4 @@
-name: golangci-lint
+name: linter
 on:
   push:
     tags:
@@ -26,4 +26,14 @@ jobs:
         uses: golangci/golangci-lint-action@v3.4.0
         with:
           version: latest
+  revive:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.19'
+      - uses: actions/checkout@v3
+      - name: Revive Action
+        uses: morphy2k/revive-action@v2.5.1
 
