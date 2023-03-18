@@ -53,9 +53,11 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan", err.Error())
 		}
 
-		err = MarkTrxnAsPlanned(transactionHandler, input.AccountInfo)
-		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan", err.Error())
+		if input.SavePlan {
+			err = MarkTrxnAsPlanned(transactionHandler, input.AccountInfo)
+			if err != nil {
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan", err.Error())
+			}
 		}
 
 		responsePaymentPlans := make([]models.PaymentPlan, len(paymentPlanResponse.PaymentPlans))
@@ -174,7 +176,7 @@ func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl st
 	// save payment tasks to DB
 	listOfIds, err := CreateManyPaymentTask(h, paymentTasks)
 	if err != nil {
-		h.L.Error("[PaymentTask] Error creating PaymentTasks", "error", err)
+		h.L.Error("[PaymentTask] Error creating PaymentTasks ", "error", err, "paymentTasks", paymentTasks)
 		return nil, err
 	}
 
