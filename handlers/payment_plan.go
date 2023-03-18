@@ -39,9 +39,10 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 		input.UserId = user.GetID().Hex()
 
 		accountInfoList := make([]models.AccountInfo, len(input.AccountInfo))
-		for idx, accountInfo := range input.AccountInfo {
-			accountInfoList[idx] = accountInfo
-		}
+		// for idx, accountInfo := range input.AccountInfo {
+		// 	accountInfoList[idx] = accountInfo
+		// }
+		copy(accountInfoList, input.AccountInfo)
 		metaData := models.MetaData{
 			PreferredPlanType:         input.MetaData.PreferredPlanType,
 			PreferredTimelineInMonths: input.MetaData.PreferredTimelineInMonths,

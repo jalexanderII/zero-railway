@@ -99,7 +99,7 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 			input.PublicToken = temp
 			plaidClient.L.Info("INPUT: ", input)
 		}
-		plaidClient.L.Info("METADATA: ", input.Institution)
+		plaidClient.L.Info("METADATA DATA: ", input.Institution)
 
 		user, err := plaidClient.GetUser(input.Email)
 		if err != nil {
