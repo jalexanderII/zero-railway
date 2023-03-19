@@ -116,7 +116,7 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 }
 
 type DeleteBody struct {
-	TransactionIds []string `json:"transaction_ids"`
+	TransactionIds []string `json:"transaction_ids,omitempty"`
 }
 
 // @Summary Delete a single PaymentPlan.
@@ -128,14 +128,17 @@ type DeleteBody struct {
 // @Router /paymentplan/:id [delete]
 func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		var input DeleteBody
-		if err := c.BodyParser(&input); err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
-		}
-		h.L.Info("Delete Body", input)
-		err := MarkTrxnAsNotPlanned(h, input.TransactionIds)
-		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
+		h.L.Info("This is body ", c.Body())
+		if len(c.Body()) != 0 {
+			var input DeleteBody
+			if err := c.BodyParser(&input); err != nil {
+				return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
+			}
+			h.L.Info("Delete Body", input)
+			err := MarkTrxnAsNotPlanned(h, input.TransactionIds)
+			if err != nil {
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
+			}
 		}
 
 		// get the id from the request params
@@ -315,5 +318,6 @@ func CreateResponsePaymentPlan(paymentTaskModel *models.PaymentPlan) models.Paym
 		Active:           paymentTaskModel.Active,
 		Status:           paymentTaskModel.Status,
 		PaymentAction:    paymentActions,
+		Transactions:     paymentTaskModel.Transactions,
 	}
 }
