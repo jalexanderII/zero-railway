@@ -202,7 +202,7 @@ func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl st
 		paymentTasks[idx] = *pt
 	}
 
-	h.L.Info("PaymentTasks", paymentTasks)
+	h.L.Infof("PaymentTasks %v", paymentTasks)
 	// send payment tasks to planning to get payment plans
 	url := fmt.Sprintf("%s/paymentplan", planningUrl)
 	res, err := planningCreatePaymentPlan(h, url, &models.CreatePaymentPlanRequest{PaymentTasks: paymentTasks, MetaData: in.MetaData, SavePlan: in.SavePlan})
