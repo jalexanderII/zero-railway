@@ -54,7 +54,11 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 		}
 
 		if input.SavePlan {
-			err = MarkTrxnAsPlanned(transactionHandler, input.AccountInfo)
+			var ids []string
+			for _, accountInfo := range input.AccountInfo {
+				ids = append(ids, accountInfo.TransactionIds...)
+			}
+			err = UpdateTrxnPlanStatus(transactionHandler, ids, true)
 			if err != nil {
 				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan ", err.Error())
 			}
@@ -72,23 +76,23 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 	}
 }
 
-func MarkTrxnAsPlanned(h *Handler, info []models.AccountInfo) error {
-	for _, accountInfo := range info {
-		for _, trxnId := range accountInfo.TransactionIds {
-			oid, err := primitive.ObjectIDFromHex(trxnId)
-			if err != nil {
-				return err
-			}
-			filter := bson.M{"_id": oid}
-			update := bson.M{"$set": bson.M{"in_plan": true}}
-			_, err = h.Db.UpdateOne(h.C, filter, update)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
+// func MarkTrxnAsPlanned(h *Handler, info []models.AccountInfo) error {
+// 	for _, accountInfo := range info {
+// 		for _, trxnId := range accountInfo.TransactionIds {
+// 			oid, err := primitive.ObjectIDFromHex(trxnId)
+// 			if err != nil {
+// 				return err
+// 			}
+// 			filter := bson.M{"_id": oid}
+// 			update := bson.M{"$set": bson.M{"in_plan": true}}
+// 			_, err = h.Db.UpdateOne(h.C, filter, update)
+// 			if err != nil {
+// 				return err
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 // @Summary Get payment plans for a single user.
 // @Description fetch all payment plans for the user by email.
@@ -126,19 +130,17 @@ type DeleteBody struct {
 // @Produce json
 // @Success 200 {object} models.DeletePaymentPlanResponse
 // @Router /paymentplan/:id [delete]
-func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func DeletePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		h.L.Info("This is body ", c.Body())
-		if len(c.Body()) != 0 {
-			var input DeleteBody
-			if err := c.BodyParser(&input); err != nil {
-				return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
-			}
-			h.L.Info("Delete Body", input)
-			err := MarkTrxnAsNotPlanned(h, input.TransactionIds)
-			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
-			}
+		var input DeleteBody
+		if err := c.BodyParser(&input); err != nil {
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
+		}
+		h.L.Info("Delete Body", input)
+		err := UpdateTrxnPlanStatus(transactionHandler, input.TransactionIds, false)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
 		}
 
 		// get the id from the request params
@@ -156,7 +158,7 @@ func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 	}
 }
 
-func MarkTrxnAsNotPlanned(h *Handler, transactionIds []string) error {
+func UpdateTrxnPlanStatus(h *Handler, transactionIds []string, status bool) error {
 	oids := make([]primitive.ObjectID, len(transactionIds))
 	for _, trxnId := range transactionIds {
 		oid, err := primitive.ObjectIDFromHex(trxnId)
@@ -166,7 +168,7 @@ func MarkTrxnAsNotPlanned(h *Handler, transactionIds []string) error {
 		oids = append(oids, oid)
 	}
 	filter := bson.M{"_id": bson.M{"$in": oids}}
-	update := bson.M{"$set": bson.M{"in_plan": false}}
+	update := bson.M{"$set": bson.M{"in_plan": status}}
 	_, err := h.Db.UpdateMany(h.C, filter, update)
 	if err != nil {
 		return err

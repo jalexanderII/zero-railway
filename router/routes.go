@@ -40,7 +40,7 @@ func SetupRoutes(app *fiber.App) {
 	coreEndpoints.Get("/kpi/:email", handlers.GetKPIs(accountHandler, planningURL))
 	coreEndpoints.Get("/paymentplan/:email", handlers.GetPaymentPlans(paymentTaskHandler, planningURL))
 	coreEndpoints.Post("/paymentplan/:email", handlers.CreatePaymentPlan(paymentTaskHandler, transactionHandler, planningURL))
-	coreEndpoints.Delete("/paymentplan/:id", handlers.DeletePaymentPlan(paymentTaskHandler, planningURL))
+	coreEndpoints.Post("/paymentplan/delete/:id", handlers.DeletePaymentPlan(paymentTaskHandler, transactionHandler, planningURL))
 
 	accounts := coreEndpoints.Group("/accounts")
 	accounts.Get("/:email", handlers.GetUsersAccountsByEmail(accountHandler))
