@@ -19,12 +19,18 @@ linters:
 
 issues:
   # List of regexps of issue texts to exclude, empty list by default.
-  # But independently from this option we use default exclude patterns,
+  # But independently of this option we use default exclude patterns,
   # it can be disabled by `exclude-use-default: false`. To list all
   # excluded by default patterns execute `golangci-lint run --help`
   exclude:
     - '^(G104|G401|G505|G501):'
+    - '^(S1001):'
     - '^shadow: declaration of'
+
+  exclude-rules:
+    - linters:
+        - gosimple
+      text: "S1001: should use copy(to, from) instead of a loop (gosimple)"
 
   # which files to skip: they will be analyzed, but issues from them
   # won't be reported. Default value is empty list, but there is

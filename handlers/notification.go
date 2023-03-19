@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	client "github.com/jalexanderII/zero-railway/app/clients"
 	"time"
+
+	client "github.com/jalexanderII/zero-railway/app/clients"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
@@ -26,6 +27,12 @@ type SendSMSResponse struct {
 // @Router /notify [get]
 func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
+		err := cleanUpStalePaymentPlans(h, planningUrl)
+		if err != nil {
+			h.L.Error("[Planning] error cleaning up old payment plans ", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error cleaning up old payment plans", err.Error())
+		}
+
 		url := fmt.Sprintf("%s/paymentactions", planningUrl)
 		paymentActionsRequest := &models.GetAllUpcomingPaymentActionsRequest{
 			Date: time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
@@ -119,4 +126,13 @@ func planningGetAllUpcomingPaymentActions(h *Handler, url string, req *models.Ge
 		return nil, err
 	}
 	return &result, nil
+}
+
+func cleanUpStalePaymentPlans(h *Handler, planningUrl string) error {
+	url := fmt.Sprintf("%s/cleanup", planningUrl)
+	_, err := h.H.Post(url, "application/json", nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

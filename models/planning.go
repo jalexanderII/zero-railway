@@ -73,6 +73,7 @@ type PaymentPlan struct {
 	Active           bool               `json:"active,omitempty"`
 	Status           PaymentStatus      `json:"status,omitempty"`
 	PaymentAction    []PaymentAction    `json:"payment_action,omitempty"`
+	Transactions     []string           `json:"transactions" bson:"transactions,omitempty"`
 }
 
 type PaymentAction struct {

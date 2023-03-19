@@ -28,35 +28,35 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found ", err.Error())
 		}
 
 		currentDate := time.Now().Format("01.02.2006")
 		var input models.GetPaymentPlanRequest
 		if err = c.BodyParser(&input); err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request", err.Error())
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
 		}
 		input.UserId = user.GetID().Hex()
 
-		accountInfoList := make([]models.AccountInfo, len(input.AccountInfo))
+		// accountInfoList := make([]models.AccountInfo, len(input.AccountInfo))
 		// for idx, accountInfo := range input.AccountInfo {
 		// 	accountInfoList[idx] = accountInfo
 		// }
-		copy(accountInfoList, input.AccountInfo)
+		// copy(accountInfoList, input.AccountInfo)
 		metaData := models.MetaData{
 			PreferredPlanType:         input.MetaData.PreferredPlanType,
 			PreferredTimelineInMonths: input.MetaData.PreferredTimelineInMonths,
 			PreferredPaymentFreq:      input.MetaData.PreferredPaymentFreq,
 		}
-		paymentPlanResponse, err := GetPaymentPlan(h, &models.GetPaymentPlanRequest{AccountInfo: accountInfoList, UserId: input.UserId, MetaData: metaData, SavePlan: input.SavePlan}, planningUrl)
+		paymentPlanResponse, err := GetPaymentPlan(h, &models.GetPaymentPlanRequest{AccountInfo: input.AccountInfo, UserId: input.UserId, MetaData: metaData, SavePlan: input.SavePlan}, planningUrl)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan ", err.Error())
 		}
 
 		if input.SavePlan {
 			err = MarkTrxnAsPlanned(transactionHandler, input.AccountInfo)
 			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan", err.Error())
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan ", err.Error())
 			}
 		}
 
@@ -115,18 +115,31 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	}
 }
 
+type DeleteBody struct {
+	TransactionIds []string `json:"transaction_ids"`
+}
+
 // @Summary Delete a single PaymentPlan.
 // @Description delete a single PaymentPlan by id.
 // @Tags paymentplan
-// @Param id path string true "PaymentPlan ID"
+// @Param id path string true delete_body body DeleteBody "PaymentPlan Delete request"
 // @Produce json
 // @Success 200 {object} models.DeletePaymentPlanResponse
 // @Router /paymentplan/:id [delete]
 func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
+		var input DeleteBody
+		if err := c.BodyParser(&input); err != nil {
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
+		}
+		h.L.Info("Delete Body", input)
+		err := MarkTrxnAsNotPlanned(h, input.TransactionIds)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
+		}
+
 		// get the id from the request params
 		id := c.Params("id")
-
 		url := fmt.Sprintf("%s/paymentplan/%s", planningUrl, id)
 		res, err := planningDeletePaymentPlan(h, url)
 		if err != nil {
@@ -140,20 +153,20 @@ func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 	}
 }
 
-func MarkTrxnAsNotPlanned(h *Handler, info []models.AccountInfo) error {
-	for _, accountInfo := range info {
-		for _, trxnId := range accountInfo.TransactionIds {
-			oid, err := primitive.ObjectIDFromHex(trxnId)
-			if err != nil {
-				return err
-			}
-			filter := bson.M{"_id": oid}
-			update := bson.M{"$set": bson.M{"in_plan": false}}
-			_, err = h.Db.UpdateOne(h.C, filter, update)
-			if err != nil {
-				return err
-			}
+func MarkTrxnAsNotPlanned(h *Handler, transactionIds []string) error {
+	oids := make([]primitive.ObjectID, len(transactionIds))
+	for _, trxnId := range transactionIds {
+		oid, err := primitive.ObjectIDFromHex(trxnId)
+		if err != nil {
+			return err
 		}
+		oids = append(oids, oid)
+	}
+	filter := bson.M{"_id": bson.M{"$in": oids}}
+	update := bson.M{"$set": bson.M{"in_plan": false}}
+	_, err := h.Db.UpdateMany(h.C, filter, update)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -166,9 +179,10 @@ func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl st
 		id, _ := primitive.ObjectIDFromHex(in.UserId)
 		accId, _ := primitive.ObjectIDFromHex(item.AccountId)
 		task := models.PaymentTask{
-			UserId:    id,
-			AccountId: accId,
-			Amount:    item.Amount,
+			UserId:       id,
+			AccountId:    accId,
+			Amount:       item.Amount,
+			Transactions: item.TransactionIds,
 		}
 		paymentTasks[idx] = task
 	}
@@ -185,6 +199,7 @@ func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl st
 		paymentTasks[idx] = *pt
 	}
 
+	h.L.Info("PaymentTasks", paymentTasks)
 	// send payment tasks to planning to get payment plans
 	url := fmt.Sprintf("%s/paymentplan", planningUrl)
 	res, err := planningCreatePaymentPlan(h, url, &models.CreatePaymentPlanRequest{PaymentTasks: paymentTasks, MetaData: in.MetaData, SavePlan: in.SavePlan})
