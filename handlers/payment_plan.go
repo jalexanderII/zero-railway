@@ -38,11 +38,6 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 		}
 		input.UserId = user.GetID().Hex()
 
-		// accountInfoList := make([]models.AccountInfo, len(input.AccountInfo))
-		// for idx, accountInfo := range input.AccountInfo {
-		// 	accountInfoList[idx] = accountInfo
-		// }
-		// copy(accountInfoList, input.AccountInfo)
 		metaData := models.MetaData{
 			PreferredPlanType:         input.MetaData.PreferredPlanType,
 			PreferredTimelineInMonths: input.MetaData.PreferredTimelineInMonths,
@@ -75,24 +70,6 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "payment plan created", responsePaymentPlans)
 	}
 }
-
-// func MarkTrxnAsPlanned(h *Handler, info []models.AccountInfo) error {
-// 	for _, accountInfo := range info {
-// 		for _, trxnId := range accountInfo.TransactionIds {
-// 			oid, err := primitive.ObjectIDFromHex(trxnId)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			filter := bson.M{"_id": oid}
-// 			update := bson.M{"$set": bson.M{"in_plan": true}}
-// 			_, err = h.Db.UpdateOne(h.C, filter, update)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
 
 // @Summary Get payment plans for a single user.
 // @Description fetch all payment plans for the user by email.
