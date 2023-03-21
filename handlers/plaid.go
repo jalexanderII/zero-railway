@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"strings"
-
+	"github.com/go-redis/cache/v8"
 	client "github.com/jalexanderII/zero-railway/app/clients"
 	"github.com/jalexanderII/zero-railway/models"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -87,7 +87,7 @@ type Response struct {
 // @Produce json
 // @Success 200 {object} Response
 // @Router /exchange [post]
-func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
+func ExchangePublicToken(plaidClient *client.PlaidClient, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		var input Input
 		if err := c.BodyParser(&input); err != nil {
@@ -123,7 +123,7 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to save token", err.Error())
 		}
 
-		err = GetandSaveAccountDetails(plaidClient, token, c)
+		err = GetandSaveAccountDetails(plaidClient, token, c, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get and save account details", err.Error())
 		}
@@ -136,40 +136,106 @@ func ExchangePublicToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) err
 	}
 }
 
-func GetandSaveAccountDetails(plaidClient *client.PlaidClient, token *models.Token, c *fiber.Ctx) error {
-	accountDetails, err := plaidClient.GetAccountDetails(token)
+// @Summary Get all account and transaction info for all of a users linked accounts.
+// @Description Get all account and transaction info
+// @Tags plaid
+// @Accept json
+// @Param email path string true "User email"
+// @Produce json
+// @Success 200 {object} models.AccountDetailsResponse
+// @Router /accounts/:email [get]
+func GetAccountInfo(plaidClient *client.PlaidClient, rcache *cache.Cache) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		email := c.Params("email")
+		user, err := plaidClient.GetUserByEmail(email)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+		}
+
+		AccountDetails, err := FetchDataAndCache(*user.GetID(), plaidClient, rcache, false)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get account details", "data": err.Error()})
+		}
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "Fetched all account details from cache", AccountDetails)
+
+		//userId := user.GetID().Hex()
+		//var cachedAccountDetails models.AccountDetailsResponse
+		//err = rcache.Get(plaidClient.C, userId, &cachedAccountDetails)
+		//if err == cache.ErrCacheMiss {
+		//	tokens, err := plaidClient.GetTokens(*user.GetID())
+		//	if err != nil {
+		//		return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get token for user", err.Error())
+		//	}
+		//
+		//	var accounts []*models.Account
+		//	var transactions []*models.Transaction
+		//	for _, token := range *tokens {
+		//		accountDetails, err := plaidClient.GetAccountDetails(&token)
+		//		if err != nil {
+		//			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get account details", "data": err.Error()})
+		//		}
+		//		accounts = append(accounts, accountDetails.Accounts...)
+		//		transactions = append(transactions, accountDetails.Transactions...)
+		//	}
+		//	consolidatedAccountDetails := models.AccountDetailsResponse{
+		//		Accounts:     accounts,
+		//		Transactions: transactions,
+		//	}
+		//
+		//	if err := rcache.Set(&cache.Item{
+		//		Ctx:   plaidClient.C,
+		//		Key:   userId,
+		//		Value: &consolidatedAccountDetails,
+		//		TTL:   24 * time.Hour,
+		//	}); err != nil {
+		//		return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to marshal account details", err.Error())
+		//	}
+		//
+		//	return FiberJsonResponse(c, fiber.StatusOK, "success", "Fetched all account details and saved to cache", consolidatedAccountDetails)
+		//} else if err != nil {
+		//	return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get account details from cache", err.Error())
+		//}
+		//
+		//return FiberJsonResponse(c, fiber.StatusOK, "success", "Fetched all account details from cache", cachedAccountDetails)
+	}
+}
+
+func GetandSaveAccountDetails(plaidClient *client.PlaidClient, token *models.Token, c *fiber.Ctx, rcache *cache.Cache) error {
+	_, err := FetchDataAndCache(token.User.ID, plaidClient, rcache, true)
+
+	//accountDetails, err := plaidClient.GetAccountDetails(token)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to get account details", "data": err.Error()})
 	}
-
-	accounts := accountDetails.Accounts
-	plaidAccToDBAccId := make(map[string]string)
-	transactions := accountDetails.Transactions
-
-	for _, account := range accounts {
-		req := &models.CreateAccountRequest{Account: account}
-		dbAccount, err := plaidClient.CreateAccount(plaidClient.C, req)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account account", "data": err.Error()})
-		}
-		plaidAccToDBAccId[dbAccount.PlaidAccountId] = dbAccount.ID.Hex()
-	}
-
-	if token.Purpose == models.PURPOSE_CREDIT {
-		for _, transaction := range transactions {
-			trxnID, _ := primitive.ObjectIDFromHex(plaidAccToDBAccId[transaction.PlaidAccountId])
-			transaction.AccountId = trxnID
-			req := &models.CreateTransactionRequest{Transaction: transaction}
-			_, err = plaidClient.CreateTransaction(plaidClient.C, req)
-			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account transaction", "data": err.Error()})
-			}
-		}
-	}
+	//
+	//accounts := accountDetails.Accounts
+	//plaidAccToDBAccId := make(map[string]string)
+	//transactions := accountDetails.Transactions
+	//
+	//for _, account := range accounts {
+	//	req := &models.CreateAccountRequest{Account: account}
+	//	dbAccount, err := plaidClient.CreateAccount(plaidClient.C, req)
+	//	if err != nil {
+	//		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account account", "data": err.Error()})
+	//	}
+	//	plaidAccToDBAccId[dbAccount.PlaidAccountId] = dbAccount.ID.Hex()
+	//}
+	//
+	//if token.Purpose == models.PURPOSE_CREDIT {
+	//	for _, transaction := range transactions {
+	//		trxnID, _ := primitive.ObjectIDFromHex(plaidAccToDBAccId[transaction.PlaidAccountId])
+	//		transaction.AccountId = trxnID
+	//		req := &models.CreateTransactionRequest{Transaction: transaction}
+	//		_, err = plaidClient.CreateTransaction(plaidClient.C, req)
+	//		if err != nil {
+	//			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Failure to save account transaction", "data": err.Error()})
+	//		}
+	//	}
+	//}
 	return nil
 }
 
-func ArePlaidAccountsLinked(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
+func ArePlaidAccountsLinked(plaidClient *client.PlaidClient, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := plaidClient.GetUserByEmail(email)
@@ -182,14 +248,61 @@ func ArePlaidAccountsLinked(plaidClient *client.PlaidClient) func(c *fiber.Ctx) 
 			Credit bool `json:"credit"`
 		}
 
-		debitAcc, err := plaidClient.IsDebitAccountLinked(user.GetID())
+		debitAcc, err := IsDebitAccountLinked(user.GetID(), plaidClient, rcache)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's credit accounts", "data": err.Error()})
 		}
-		creditAcc, err := plaidClient.IsCreditAccountLinked(user.GetID())
+		creditAcc, err := IsCreditAccountLinked(user.GetID(), plaidClient, rcache)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "error", "message": "Error on fetching user's credit accounts", "data": err.Error()})
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": Exist{debitAcc.Status, creditAcc.Status}})
 	}
+}
+
+func IsDebitAccountLinked(userId *primitive.ObjectID, p *client.PlaidClient, rcache *cache.Cache) (*models.IsAccountLinkedResponse, error) {
+	return AccountLinked(userId, p, rcache, "depository")
+	//
+	//var account models.Account
+	//
+	//filter := []bson.M{{"user_id": userId}, {"type": "depository"}}
+	//err := p.AccDb.FindOne(p.C, bson.M{"$and": filter}).Decode(&account)
+	//if err != nil {
+	//	if err == mongo.ErrNoDocuments {
+	//		return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
+	//	}
+	//	p.L.Error("[AccountDB] Error getting debt account for user", "error", err)
+	//	return nil, err
+	//}
+	//
+	//return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
+}
+
+func IsCreditAccountLinked(userId *primitive.ObjectID, p *client.PlaidClient, rcache *cache.Cache) (*models.IsAccountLinkedResponse, error) {
+	return AccountLinked(userId, p, rcache, "credit")
+	//var account models.Account
+	//filter := []bson.M{{"user_id": userId}, {"type": "credit"}}
+	//err := p.AccDb.FindOne(p.C, bson.M{"$and": filter}).Decode(&account)
+	//if err != nil {
+	//	// ErrNoDocuments means that the filter did not match any documents in the collection
+	//	if err == mongo.ErrNoDocuments {
+	//		return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
+	//	}
+	//	p.L.Error("[AccountDB] Error getting debt account for user", "error", err)
+	//	return nil, err
+	//}
+	//return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
+}
+
+func AccountLinked(userId *primitive.ObjectID, p *client.PlaidClient, rcache *cache.Cache, accType string) (*models.IsAccountLinkedResponse, error) {
+	Accounts, err := FetchAccountDetails(*userId, p, rcache)
+	if err != nil {
+		return nil, err
+	}
+	for _, acc := range Accounts {
+		if acc.Type == accType {
+			return &models.IsAccountLinkedResponse{Status: true}, nil
+		}
+	}
+	return &models.IsAccountLinkedResponse{Status: false}, nil
 }

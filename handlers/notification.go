@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/go-redis/cache/v8"
 	"time"
 
 	client "github.com/jalexanderII/zero-railway/app/clients"
@@ -25,7 +26,7 @@ type SendSMSResponse struct {
 // @Produce json
 // @Success 200 {object} []models.SendSMSResponse
 // @Router /notify [get]
-func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		err := cleanUpStalePaymentPlans(h, planningUrl)
 		if err != nil {
@@ -65,11 +66,11 @@ func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, plan
 			}
 
 			id, _ := primitive.ObjectIDFromHex(userId)
-			userAccs, err := GetUserAccounts(h, &id)
+			userAccs, err := GetUserAccounts(h, &id, rcache)
 			if err != nil {
 				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing accounts", err.Error())
 			}
-			totalDebit := GetDebitAccountBalance(h, &id)
+			totalDebit := GetDebitAccountBalance(h, &id, rcache)
 			if err != nil {
 				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting debit balance", err.Error())
 			}

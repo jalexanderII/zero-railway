@@ -3,6 +3,8 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/cache/v8"
+	client "github.com/jalexanderII/zero-railway/app/clients"
 	"net/http"
 	"os"
 	"strings"
@@ -25,15 +27,17 @@ type DBInsertResponse struct {
 type Handler struct {
 	Db     *mongo.Collection
 	UserDb *mongo.Collection
+	P      *client.PlaidClient
 	L      *logrus.Logger
 	C      context.Context
 	H      *http.Client
 }
 
-func NewHandler(collectionName string, l *logrus.Logger) *Handler {
+func NewHandler(collectionName string, l *logrus.Logger, p *client.PlaidClient) *Handler {
 	return &Handler{
 		Db:     database.GetCollection(collectionName),
 		UserDb: database.GetCollection(os.Getenv("USER_COLLECTION")),
+		P:      p,
 		L:      l,
 		C:      context.Background(),
 		H:      &http.Client{Timeout: 10 * time.Second},
@@ -111,4 +115,67 @@ func FormatPhoneNumber(pn string) string {
 		return fmt.Sprintf("+%s", pn)
 	}
 	return pn
+}
+
+func FetchDataAndCache(userID primitive.ObjectID, plaidClient *client.PlaidClient, rcache *cache.Cache, reset bool) (*models.AccountDetailsResponse, error) {
+	var cachedAccountDetails models.AccountDetailsResponse
+	if reset {
+		err := rcache.Delete(plaidClient.C, userID.Hex())
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := rcache.Get(plaidClient.C, userID.Hex(), &cachedAccountDetails)
+	if err == cache.ErrCacheMiss || reset {
+		tokens, err := plaidClient.GetTokens(userID)
+		if err != nil {
+			return nil, err
+		}
+
+		var accounts []*models.Account
+		var transactions []*models.Transaction
+		for _, token := range *tokens {
+			accountDetails, err := plaidClient.GetAccountDetails(&token)
+			if err != nil {
+				return nil, err
+			}
+			accounts = append(accounts, accountDetails.Accounts...)
+			transactions = append(transactions, accountDetails.Transactions...)
+		}
+		consolidatedAccountDetails := models.AccountDetailsResponse{
+			Accounts:     accounts,
+			Transactions: transactions,
+		}
+
+		if err := rcache.Set(&cache.Item{
+			Ctx:   plaidClient.C,
+			Key:   userID.Hex(),
+			Value: &consolidatedAccountDetails,
+			TTL:   24 * time.Hour,
+		}); err != nil {
+			return nil, err
+		}
+
+		return &consolidatedAccountDetails, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &cachedAccountDetails, nil
+}
+
+func FetchAccountDetails(userID primitive.ObjectID, plaidClient *client.PlaidClient, rcache *cache.Cache) ([]*models.Account, error) {
+	AccountDetails, err := FetchDataAndCache(userID, plaidClient, rcache, false)
+	if err != nil {
+		return nil, err
+	}
+	return AccountDetails.Accounts, nil
+}
+
+func FetchTransactionDetails(userID primitive.ObjectID, plaidClient *client.PlaidClient, rcache *cache.Cache) ([]*models.Transaction, error) {
+	AccountDetails, err := FetchDataAndCache(userID, plaidClient, rcache, false)
+	if err != nil {
+		return nil, err
+	}
+	return AccountDetails.Transactions, nil
 }

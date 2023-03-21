@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-redis/cache/v8"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
@@ -25,7 +26,7 @@ type KPI struct {
 // @Produce json
 // @Success 200 {object} KPI
 // @Router /kpi/:email [get]
-func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func GetKPIs(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
@@ -33,7 +34,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
-		accounts, err := GetUserAccounts(h, user.GetID())
+		accounts, err := GetUserAccounts(h, user.GetID(), rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user accounts not found", err.Error())
 		}
@@ -46,7 +47,7 @@ func GetKPIs(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		}
 
 		var totalDebit = 0.0
-		debitAccBalance := GetDebitAccountBalance(h, user.GetID())
+		debitAccBalance := GetDebitAccountBalance(h, user.GetID(), rcache)
 		if debitAccBalance != nil {
 			totalDebit = debitAccBalance.CurrentBalance
 		}
@@ -106,7 +107,7 @@ type Series struct {
 // @Produce json
 // @Success 200 {object} Series
 // @Router /waterfall/:email [get]
-func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func GetWaterfall(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
@@ -114,7 +115,7 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
 
-		accounts, err := GetUserAccounts(h, user.GetID())
+		accounts, err := GetUserAccounts(h, user.GetID(), rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err.Error())
 		}
@@ -133,6 +134,7 @@ func GetWaterfall(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 		accountSeries := make(map[string]Series)
 		for idx, waterfallMonth := range overview.MonthlyWaterfall {
 			for accId, value := range waterfallMonth.AccountToAmounts {
+				h.L.Error("accId", accId, "accountIdToName", accountIdToName)
 				accName := accId
 				if n, ok := accountIdToName[accId]; ok {
 					accName = n

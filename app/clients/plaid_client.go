@@ -289,7 +289,12 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 				if err != nil {
 					userId = primitive.NewObjectID()
 				}
+				AccountId, err := primitive.ObjectIDFromHex(account.AccountId)
+				if err != nil {
+					return nil, errors.New("error setting AccountId")
+				}
 				accounts[idx] = &models.Account{
+					ID:                     AccountId,
 					UserId:                 userId,
 					Name:                   account.Name,
 					OfficialName:           account.GetOfficialName(),
@@ -317,7 +322,12 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 		if err != nil {
 			userId = primitive.NewObjectID()
 		}
+		transactionId, err := primitive.ObjectIDFromHex(transaction.TransactionId)
+		if err != nil {
+			return nil, errors.New("error setting transactionID")
+		}
 		transactions = append(transactions, &models.Transaction{
+			ID:                   transactionId,
 			UserId:               userId,
 			TransactionType:      transaction.GetTransactionType(),
 			PendingTransactionId: transaction.GetPendingTransactionId(),
@@ -378,9 +388,9 @@ func (p *PlaidClient) UpdateToken(TokenId primitive.ObjectID, value, itemId stri
 }
 
 // GetTokens returns every token associated to the user in the form of a slice of Token pointers.
-func (p *PlaidClient) GetTokens(username string) ([]*models.Token, error) {
+func (p *PlaidClient) GetTokens(Id primitive.ObjectID) (*[]models.Token, error) {
 	var results []models.Token
-	cursor, err := p.PlaidDb.Find(p.C, bson.D{{Key: "user.username", Value: username}})
+	cursor, err := p.PlaidDb.Find(p.C, bson.D{{Key: "user._id", Value: Id}})
 	if err != nil {
 		return nil, err
 	}
@@ -388,11 +398,7 @@ func (p *PlaidClient) GetTokens(username string) ([]*models.Token, error) {
 		p.L.Error("[PlaidDb] Error getting all users tokens", "error", err)
 		return nil, err
 	}
-	tokens := make([]*models.Token, len(results))
-	for idx, token := range results {
-		tokens[idx] = &token
-	}
-	return tokens, nil
+	return &results, nil
 }
 
 // GetToken will get a token from the database and return it given the user's ID and the
@@ -583,35 +589,4 @@ func (p *PlaidClient) CreateTransaction(ctx context.Context, in *models.CreateTr
 		transaction.ID = oid
 	}
 	return transaction, nil
-}
-
-func (p *PlaidClient) IsDebitAccountLinked(userId *primitive.ObjectID) (*models.IsAccountLinkedResponse, error) {
-	var account models.Account
-
-	filter := []bson.M{{"user_id": userId}, {"type": "depository"}}
-	err := p.AccDb.FindOne(p.C, bson.M{"$and": filter}).Decode(&account)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
-		}
-		p.L.Error("[AccountDB] Error getting debt account for user", "error", err)
-		return nil, err
-	}
-
-	return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
-}
-
-func (p *PlaidClient) IsCreditAccountLinked(userId *primitive.ObjectID) (*models.IsAccountLinkedResponse, error) {
-	var account models.Account
-	filter := []bson.M{{"user_id": userId}, {"type": "credit"}}
-	err := p.AccDb.FindOne(p.C, bson.M{"$and": filter}).Decode(&account)
-	if err != nil {
-		// ErrNoDocuments means that the filter did not match any documents in the collection
-		if err == mongo.ErrNoDocuments {
-			return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
-		}
-		p.L.Error("[AccountDB] Error getting debt account for user", "error", err)
-		return nil, err
-	}
-	return &models.IsAccountLinkedResponse{Status: account.NotNull()}, nil
 }

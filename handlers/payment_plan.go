@@ -23,7 +23,7 @@ import (
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
 // @Router /paymentplan/:email [post]
-func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 		user, err := h.GetUserByEmail(email)
@@ -48,16 +48,16 @@ func CreatePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting payment plan ", err.Error())
 		}
 
-		if input.SavePlan {
-			var ids []string
-			for _, accountInfo := range input.AccountInfo {
-				ids = append(ids, accountInfo.TransactionIds...)
-			}
-			err = UpdateTrxnPlanStatus(transactionHandler, ids, true)
-			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan ", err.Error())
-			}
-		}
+		//if input.SavePlan {
+		//	var ids []string
+		//	for _, accountInfo := range input.AccountInfo {
+		//		ids = append(ids, accountInfo.TransactionIds...)
+		//	}
+		//	err = UpdateTrxnPlanStatus(transactionHandler, ids, true)
+		//	if err != nil {
+		//		return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error marking transactions as in plan ", err.Error())
+		//	}
+		//}
 
 		responsePaymentPlans := make([]models.PaymentPlan, len(paymentPlanResponse.PaymentPlans))
 		for idx, paymentPlan := range paymentPlanResponse.PaymentPlans {
@@ -96,9 +96,9 @@ func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	}
 }
 
-type DeleteBody struct {
-	TransactionIds []string `json:"transaction_ids,omitempty"`
-}
+//type DeleteBody struct {
+//	TransactionIds []string `json:"transaction_ids,omitempty"`
+//}
 
 // @Summary Delete a single PaymentPlan.
 // @Description delete a single PaymentPlan by id.
@@ -107,18 +107,18 @@ type DeleteBody struct {
 // @Produce json
 // @Success 200 {object} models.DeletePaymentPlanResponse
 // @Router /paymentplan/:id [delete]
-func DeletePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func DeletePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		h.L.Info("This is body ", c.Body())
-		var input DeleteBody
-		if err := c.BodyParser(&input); err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
-		}
-		h.L.Info("Delete Body", input)
-		err := UpdateTrxnPlanStatus(transactionHandler, input.TransactionIds, false)
-		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
-		}
+		//h.L.Info("This is body ", c.Body())
+		//var input DeleteBody
+		//if err := c.BodyParser(&input); err != nil {
+		//	return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "error parsing request ", err.Error())
+		//}
+		//h.L.Info("Delete Body", input)
+		//err := UpdateTrxnPlanStatus(transactionHandler, input.TransactionIds, false)
+		//if err != nil {
+		//	return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "planning error failed to delete payment plan", err.Error())
+		//}
 
 		// get the id from the request params
 		id := c.Params("id")
@@ -135,23 +135,23 @@ func DeletePaymentPlan(h, transactionHandler *Handler, planningUrl string) func(
 	}
 }
 
-func UpdateTrxnPlanStatus(h *Handler, transactionIds []string, status bool) error {
-	oids := make([]primitive.ObjectID, len(transactionIds))
-	for _, trxnId := range transactionIds {
-		oid, err := primitive.ObjectIDFromHex(trxnId)
-		if err != nil {
-			return err
-		}
-		oids = append(oids, oid)
-	}
-	filter := bson.M{"_id": bson.M{"$in": oids}}
-	update := bson.M{"$set": bson.M{"in_plan": status}}
-	_, err := h.Db.UpdateMany(h.C, filter, update)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+//func UpdateTrxnPlanStatus(h *Handler, transactionIds []string, status bool) error {
+//	oids := make([]primitive.ObjectID, len(transactionIds))
+//	for _, trxnId := range transactionIds {
+//		oid, err := primitive.ObjectIDFromHex(trxnId)
+//		if err != nil {
+//			return err
+//		}
+//		oids = append(oids, oid)
+//	}
+//	filter := bson.M{"_id": bson.M{"$in": oids}}
+//	update := bson.M{"$set": bson.M{"in_plan": status}}
+//	_, err := h.Db.UpdateMany(h.C, filter, update)
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl string) (*models.PaymentPlanResponse, error) {
 	// create payment task from user inputs
