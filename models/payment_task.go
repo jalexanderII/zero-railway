@@ -10,7 +10,7 @@ import (
 type PaymentTask struct {
 	ID           primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	UserId       primitive.ObjectID `json:"user_id" bson:"user_id"`
-	AccountId    primitive.ObjectID `json:"account_id" bson:"account_id"`
+	AccountId    string             `json:"account_id" bson:"account_id"`
 	Amount       float64            `json:"amount" bson:"amount"`
 	Transactions []string           `json:"transactions" bson:"transactions,omitempty"`
 	UpdatedAt    time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`

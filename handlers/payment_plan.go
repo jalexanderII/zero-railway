@@ -159,10 +159,9 @@ func GetPaymentPlan(h *Handler, in *models.GetPaymentPlanRequest, planningUrl st
 
 	for idx, item := range in.AccountInfo {
 		id, _ := primitive.ObjectIDFromHex(in.UserId)
-		accId, _ := primitive.ObjectIDFromHex(item.AccountId)
 		task := models.PaymentTask{
 			UserId:       id,
-			AccountId:    accId,
+			AccountId:    item.AccountId,
 			Amount:       item.Amount,
 			Transactions: item.TransactionIds,
 		}
