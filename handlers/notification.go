@@ -83,7 +83,7 @@ func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, plan
 			for accId, liab := range accLiab {
 				accName := ""
 				for _, acc := range userAccs {
-					if acc.ID.Hex() == accId {
+					if acc.ID == accId {
 						accName = acc.OfficialName
 						break
 					}

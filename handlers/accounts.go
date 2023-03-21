@@ -66,11 +66,7 @@ func GetAccount(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid user id", err.Error())
 		}
 
-		accId, err := primitive.ObjectIDFromHex(c.Params("acc_id"))
-		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "invalid account id", err.Error())
-		}
-
+		accId := c.Params("acc_id")
 		Accounts, err := FetchAccountDetails(userId, h.P, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users account", err.Error())

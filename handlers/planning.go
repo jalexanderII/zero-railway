@@ -121,7 +121,7 @@ func GetWaterfall(h *Handler, planningUrl string, rcache *cache.Cache) func(c *f
 		}
 		accountIdToName := make(map[string]string, len(accounts))
 		for _, account := range accounts {
-			accountIdToName[account.ID.Hex()] = account.OfficialName
+			accountIdToName[account.ID] = account.OfficialName
 		}
 
 		url := fmt.Sprintf("%s/waterfall/%s", planningUrl, user.GetID().Hex())

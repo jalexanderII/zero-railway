@@ -14,7 +14,7 @@ type AnnualPercentageRates struct {
 }
 
 type Account struct {
-	ID                     primitive.ObjectID       `json:"id,omitempty" bson:"_id,omitempty"`
+	ID                     string                   `json:"id,omitempty"`
 	PlaidAccountId         string                   `json:"plaid_account_id" bson:"plaid_account_id"`
 	UserId                 primitive.ObjectID       `json:"user_id" bson:"user_id"`
 	Name                   string                   `json:"name" bson:"name"`
