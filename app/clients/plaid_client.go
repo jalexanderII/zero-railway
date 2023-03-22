@@ -554,30 +554,3 @@ func (p *PlaidClient) GetUserByEmail(email string) (*models.User, error) {
 	}
 	return &user, nil
 }
-
-//func (p *PlaidClient) CreateAccount(ctx context.Context, in *models.CreateAccountRequest) (*models.Account, error) {
-//	account := in.Account
-//	dbAccount, err := p.AccDb.InsertOne(ctx, account)
-//	if err != nil {
-//		log.Printf("Error inserting new account: %v\n", err)
-//		return nil, err
-//	}
-//	if oid, ok := dbAccount.InsertedID.(primitive.ObjectID); ok {
-//		account.ID = oid
-//	}
-//
-//	return account, nil
-//}
-
-//func (p *PlaidClient) CreateTransaction(ctx context.Context, in *models.CreateTransactionRequest) (*models.Transaction, error) {
-//	transaction := in.Transaction
-//	resp, err := p.TrxnDb.InsertOne(ctx, transaction)
-//	if err != nil {
-//		log.Printf("Error inserting new Transaction: %v\n", err)
-//		return nil, err
-//	}
-//	if oid, ok := resp.InsertedID.(primitive.ObjectID); ok {
-//		transaction.ID = oid
-//	}
-//	return transaction, nil
-//}

@@ -79,14 +79,6 @@ func GetAccount(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 		}
 
 		return FiberJsonResponse(c, fiber.StatusNotFound, "error", "account not found", err.Error())
-		//
-		//
-		//var account models.Account
-		//filter := bson.M{"_id": accId}
-		//if err = h.Db.FindOne(h.C, filter).Decode(&account); err != nil {
-		//	return FiberJsonResponse(c, fiber.StatusNotFound, "error", "account not found", err.Error())
-		//}
-		//return FiberJsonResponse(c, fiber.StatusOK, "success", "account", account)
 	}
 }
 
@@ -96,29 +88,9 @@ func GetUserAccounts(h *Handler, userId *primitive.ObjectID, rcache *cache.Cache
 		return nil, err
 	}
 	return Accounts, nil
-
-	//accounts := make([]models.Account, 0)
-	//filter := bson.M{"user_id": userId}
-	//opts := options.Find().SetSkip(0).SetLimit(1000)
-	//cursor, err := h.Db.Find(h.C, filter, opts)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//if err = cursor.All(h.C, &accounts); err != nil {
-	//	return nil, err
-	//}
-	//return accounts, nil
 }
 
 func GetDebitAccountBalance(h *Handler, userId *primitive.ObjectID, rcache *cache.Cache) *models.GetDebitAccountBalanceResponse {
-	//var account models.Account
-	//filter := []bson.M{{"user_id": userId}, {"type": "depository"}}
-	//err := h.Db.FindOne(h.C, bson.M{"$and": filter}).Decode(&account)
-	//if err != nil {
-	//	return nil
-	//}
-
 	Accounts, err := FetchAccountDetails(*userId, h.P, rcache)
 	if err != nil {
 		return nil
@@ -132,11 +104,5 @@ func GetDebitAccountBalance(h *Handler, userId *primitive.ObjectID, rcache *cach
 			}
 		}
 	}
-	//
-	//
-	//return &models.GetDebitAccountBalanceResponse{
-	//	AvailableBalance: account.AvailableBalance,
-	//	CurrentBalance:   account.CurrentBalance,
-	//}
 	return nil
 }
