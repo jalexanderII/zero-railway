@@ -9,14 +9,8 @@ import (
 
 // SetupAndRunApp handle app and database start and graceful shutdown
 func SetupAndRunApp(port string) error {
-	// load env
-	err := config.LoadENV()
-	if err != nil {
-		return err
-	}
-
 	// start database
-	err = database.StartMongoDB()
+	err := database.StartMongoDB()
 	if err != nil {
 		return err
 	}

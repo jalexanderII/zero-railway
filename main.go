@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/jalexanderII/zero-railway/config"
 	"os"
 
 	"github.com/jalexanderII/zero-railway/app"
@@ -25,7 +26,13 @@ func getPort() string {
 // @host localhost:8080
 // @BasePath /
 func main() {
-	err := app.SetupAndRunApp(getPort())
+	// load env
+	err := config.LoadENV()
+	if err != nil {
+		panic(err)
+	}
+
+	err = app.SetupAndRunApp(getPort())
 	if err != nil {
 		panic(err)
 	}

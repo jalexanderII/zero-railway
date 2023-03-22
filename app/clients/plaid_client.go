@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -169,65 +170,27 @@ func (p *PlaidClient) GetAccountDetails(token *models.Token) (*models.AccountDet
 	var transactionsResponse models.TransactionsResponse
 
 	if token.Purpose == models.PURPOSE_DEBIT {
-		accountsReq := plaid.NewAccountsGetRequest(token.Value)
-		accountsResp, _, err := p.Client.AccountsGet(p.C).AccountsGetRequest(*accountsReq).Execute()
+		// if debit get account info only
+		creditAccounts, creditTransactions, err := p.fetchDebitInfo(token.Value)
 		if err != nil {
-			p.L.Errorf("[Plaid Error] getting Liabilities %+v", renderError(err)["error"])
 			return nil, err
 		}
-
-		var debitAccounts []plaid.AccountBase
-		accountIds := make(map[string]string)
-		for _, account := range accountsResp.GetAccounts() {
-			if account.Type == plaid.ACCOUNTTYPE_DEPOSITORY {
-				debitAccounts = append(debitAccounts, account)
-				accountIds[account.AccountId] = account.Name
-			}
-		}
-		transactionsResponse = models.TransactionsResponse{Accounts: debitAccounts}
-
+		transactionsResponse = models.TransactionsResponse{Accounts: creditAccounts, Transactions: creditTransactions}
 	} else {
+		// otherwise use liabilities request to get credit card accounts and also fetch transactions
 		liabilitiesReq := plaid.NewLiabilitiesGetRequest(token.Value)
 		liabilitiesResp, _, err := p.Client.LiabilitiesGet(p.C).LiabilitiesGetRequest(*liabilitiesReq).Execute()
 		if err != nil {
 			p.L.Errorf("[Plaid Error] getting Liabilities %+v", renderError(err)["error"])
 			return nil, err
 		}
-
 		liabilitiesResponse = models.LiabilitiesResponse{Liabilities: liabilitiesResp.GetLiabilities().Credit}
-		time.Sleep(2 * time.Second)
 
-		const iso8601TimeFormat = "2006-01-02"
-		endDate := time.Now().Local().Format(iso8601TimeFormat)
-		numMonths := time.Duration(-30 * 12 * 24)
-		startDate := time.Now().Local().Add(numMonths * time.Hour).Format(iso8601TimeFormat)
-
-		transactionsResp, _, err := p.Client.TransactionsGet(p.C).TransactionsGetRequest(
-			*plaid.NewTransactionsGetRequest(token.Value, startDate, endDate),
-		).Execute()
+		creditAccounts, creditTransactions, err := p.fetchCreditInfo(token.Value, true)
 		if err != nil {
-			p.L.Errorf("[Plaid Error] getting Transactions %+v", renderError(err)["error"])
 			return nil, err
 		}
-		time.Sleep(2 * time.Second)
-
-		var creditAccounts []plaid.AccountBase
-		var creditTransactions []plaid.Transaction
-		accountIds := make(map[string]string)
-		for _, account := range transactionsResp.GetAccounts() {
-			if account.Type == plaid.ACCOUNTTYPE_CREDIT {
-				creditAccounts = append(creditAccounts, account)
-				accountIds[account.AccountId] = account.Name
-			}
-		}
-
-		for _, transaction := range transactionsResp.GetTransactions() {
-			if _, ok := accountIds[transaction.AccountId]; ok {
-				creditTransactions = append(creditTransactions, transaction)
-			}
-		}
 		transactionsResponse = models.TransactionsResponse{Accounts: creditAccounts, Transactions: creditTransactions}
-
 	}
 
 	response, err := p.PlaidResponseToPB(liabilitiesResponse, transactionsResponse, token.User, token.Purpose)
@@ -236,6 +199,101 @@ func (p *PlaidClient) GetAccountDetails(token *models.Token) (*models.AccountDet
 		return nil, err
 	}
 	return response, nil
+}
+
+func (p *PlaidClient) fetchDebitInfo(accessToken string) ([]plaid.AccountBase, []plaid.Transaction, error) {
+	// if debit get account info only
+	accountsReq := plaid.NewAccountsGetRequest(accessToken)
+	accountsResp, _, err := p.Client.AccountsGet(p.C).AccountsGetRequest(*accountsReq).Execute()
+	if err != nil {
+		p.L.Errorf("[Plaid Error] getting Liabilities %+v", renderError(err)["error"])
+		return nil, nil, err
+	}
+
+	var debitAccounts []plaid.AccountBase
+	for _, account := range accountsResp.GetAccounts() {
+		if account.Type == plaid.ACCOUNTTYPE_DEPOSITORY {
+			debitAccounts = append(debitAccounts, account)
+		}
+	}
+	return debitAccounts, nil, nil
+}
+
+func (p *PlaidClient) fetchCreditInfo(accessToken string, fetchAll bool) ([]plaid.AccountBase, []plaid.Transaction, error) {
+	var creditAccounts []plaid.AccountBase
+	var creditTransactions []plaid.Transaction
+	accountIds := make(map[string]string)
+	trxnIds := make(map[string]bool)
+
+	const iso8601TimeFormat = "2006-01-02"
+	endDate := time.Now().Local().Format(iso8601TimeFormat)
+	// Last Quarter (90 days)
+	startDate := time.Now().Local().Add(-90 * 24 * time.Hour).Format(iso8601TimeFormat)
+
+	request := plaid.NewTransactionsGetRequest(
+		accessToken,
+		startDate,
+		endDate,
+	)
+	fetchNext := int32(500)
+	// last 350 transactions
+	request.SetOptions(plaid.TransactionsGetRequestOptions{Count: plaid.PtrInt32(fetchNext)})
+
+	transactionsResp, _, err := p.Client.TransactionsGet(p.C).TransactionsGetRequest(*request).Execute()
+	if err != nil {
+		p.L.Errorf("[Plaid Error] getting Transactions %+v", renderError(err)["error"])
+		return nil, nil, err
+	}
+
+	for _, account := range transactionsResp.GetAccounts() {
+		if account.Type == plaid.ACCOUNTTYPE_CREDIT {
+			if _, ok := accountIds[account.AccountId]; !ok {
+				creditAccounts = append(creditAccounts, account)
+				accountIds[account.AccountId] = account.Name
+			}
+		}
+	}
+
+	for _, transaction := range transactionsResp.GetTransactions() {
+		if _, ok := accountIds[transaction.AccountId]; ok {
+			if _, ok := trxnIds[transaction.TransactionId]; !ok {
+				creditTransactions = append(creditTransactions, transaction)
+				trxnIds[transaction.TransactionId] = true
+			}
+		}
+	}
+
+	totalNumberOfTransactions := transactionsResp.GetTotalTransactions()
+	if totalNumberOfTransactions > fetchNext && fetchAll {
+		p.L.Info("Fetching all transactions, there are more than ", fetchNext)
+		// if there are more than 500 transactions, fetch the rest
+		for i := fetchNext; i < totalNumberOfTransactions; i += int32(math.Min(float64(fetchNext), float64(totalNumberOfTransactions-i))) {
+			request.SetOptions(plaid.TransactionsGetRequestOptions{Count: plaid.PtrInt32(fetchNext), Offset: plaid.PtrInt32(i)})
+			transactionsResp, _, err = p.Client.TransactionsGet(p.C).TransactionsGetRequest(*request).Execute()
+			if err != nil {
+				p.L.Errorf("[Plaid Error] getting Transactions %+v", renderError(err)["error"])
+				return nil, nil, err
+			}
+			for _, account := range transactionsResp.GetAccounts() {
+				if account.Type == plaid.ACCOUNTTYPE_CREDIT {
+					if _, ok := accountIds[account.AccountId]; !ok {
+						creditAccounts = append(creditAccounts, account)
+						accountIds[account.AccountId] = account.Name
+					}
+				}
+			}
+
+			for _, transaction := range transactionsResp.GetTransactions() {
+				if _, ok := accountIds[transaction.AccountId]; ok {
+					if _, ok := trxnIds[transaction.TransactionId]; !ok {
+						creditTransactions = append(creditTransactions, transaction)
+						trxnIds[transaction.TransactionId] = true
+					}
+				}
+			}
+		}
+	}
+	return creditAccounts, creditTransactions, nil
 }
 
 func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models.TransactionsResponse, user *models.User, purpose models.Purpose) (*models.AccountDetailsResponse, error) {
