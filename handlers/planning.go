@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/go-redis/cache/v8"
 
 	"github.com/gofiber/fiber/v2"
@@ -134,7 +135,6 @@ func GetWaterfall(h *Handler, planningUrl string, rcache *cache.Cache) func(c *f
 		accountSeries := make(map[string]Series)
 		for idx, waterfallMonth := range overview.MonthlyWaterfall {
 			for accId, value := range waterfallMonth.AccountToAmounts {
-				h.L.Error("accId", accId, "accountIdToName", accountIdToName)
 				accName := accId
 				if n, ok := accountIdToName[accId]; ok {
 					accName = n
