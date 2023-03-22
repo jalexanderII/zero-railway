@@ -38,28 +38,32 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 		}
 
 		type Input struct {
-			Email   string `json:"email"`
+			UserId  string `json:"user_id"`
 			Purpose string `json:"purpose"`
 		}
 		var input Input
 		if err := c.BodyParser(&input); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 		}
-
-		linkTokenResp, err := plaidClient.LinkTokenCreate(input.Email, input.Purpose)
+		user, err := plaidClient.GetUserByClarkId(input.UserId)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to create link token", err.Error())
 		}
 
-		CreateCookie(c, fmt.Sprintf("%v_link_token", input.Email), linkTokenResp.Token)
-		CreateCookie(c, input.Email, linkTokenResp.UserId)
+		linkTokenResp, err := plaidClient.LinkTokenCreate(user.Email, input.Purpose)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to create link token", err.Error())
+		}
+
+		CreateCookie(c, fmt.Sprintf("%v_link_token", user.Email), linkTokenResp.Token)
+		CreateCookie(c, user.Email, linkTokenResp.UserId)
 		id, err := primitive.ObjectIDFromHex(linkTokenResp.UserId)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get ObjectId from Hex", err.Error())
 		}
 
 		plaidClient.SetLinkToken(&models.Token{
-			User:  &models.User{ID: id, Email: input.Email},
+			User:  &models.User{ID: id, Email: user.Email},
 			Value: linkTokenResp.Token,
 		})
 		msg := fmt.Sprintf("Successfully received link token from plaid with %+v purpose", input.Purpose)
@@ -68,7 +72,7 @@ func CreateLinkToken(plaidClient *client.PlaidClient) func(c *fiber.Ctx) error {
 }
 
 type Input struct {
-	Email       string                  `json:"email"`
+	UserId      string                  `json:"user_id"`
 	PublicToken string                  `json:"public_token"`
 	Purpose     models.Purpose          `json:"purpose"`
 	Institution models.PlaidInstitution `json:"institution,omitempty"`
@@ -94,15 +98,15 @@ func ExchangePublicToken(plaidClient *client.PlaidClient, rcache *cache.Cache) f
 		if err := c.BodyParser(&input); err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to parse input", err.Error())
 		}
-		if strings.HasPrefix(input.Email, "public") {
-			temp := input.Email
-			input.Email = input.PublicToken
+		if strings.HasPrefix(input.UserId, "public") {
+			temp := input.UserId
+			input.UserId = input.PublicToken
 			input.PublicToken = temp
 			plaidClient.L.Info("INPUT: ", input)
 		}
 		plaidClient.L.Info("METADATA DATA: ", input.Institution)
 
-		user, err := plaidClient.GetUser(input.Email)
+		user, err := plaidClient.GetUserByClarkId(input.UserId)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get user for token", err.Error())
 		}

@@ -439,6 +439,21 @@ func (p *PlaidClient) GetUser(email string) (*models.User, error) {
 	}, nil
 }
 
+func (p *PlaidClient) GetUserByClarkId(userId string) (*models.User, error) {
+	var user models.User
+	filter := bson.M{"clerk_id": userId}
+	err := p.UserDb.FindOne(p.C, filter).Decode(&user)
+	if err != nil {
+		p.L.Errorf("failed to get a user: %s", userId)
+		return nil, err
+	}
+	return &models.User{
+		ID:       *user.GetID(),
+		Username: user.Username,
+		Email:    user.Email,
+	}, nil
+}
+
 func (p *PlaidClient) SetLinkToken(token *models.Token) {
 	p.LinkToken = token
 }
