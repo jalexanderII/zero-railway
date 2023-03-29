@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/go-redis/cache/v8"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,14 +20,14 @@ import (
 // @Produce json
 // @Success 200 {object} DBInsertResponse
 // @Router /users [post]
-func CreateUser(h *Handler) func(c *fiber.Ctx) error {
+func CreateUser(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		nUser := new(models.User)
 		if err := c.BodyParser(nUser); err != nil {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
 		}
 
-		user, err := h.GetUserByEmail(nUser.Email)
+		user, err := h.GetUserByEmail(nUser.Email, rcache)
 		if user == nil || err != nil {
 			// ErrNoDocuments means that the filter did not match any documents in the collection
 			if user == nil || err == mongo.ErrNoDocuments {
@@ -53,10 +54,10 @@ func CreateUser(h *Handler) func(c *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} models.User
 // @Router /users/:email [get]
-func GetUser(h *Handler) func(c *fiber.Ctx) error {
+func GetUser(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
@@ -104,10 +105,10 @@ type UpdateResponse struct {
 // @Produce json
 // @Success 200 {object} UpdateResponse
 // @Router /users/:email [put]
-func UpdateUserPhone(h *Handler) func(c *fiber.Ctx) error {
+func UpdateUserPhone(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
@@ -140,13 +141,13 @@ func UpdateUserPhone(h *Handler) func(c *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} DBInsertResponse
 // @Router /clerk [post]
-func CreateUserClerkWebhook(h *Handler) func(c *fiber.Ctx) error {
+func CreateUserClerkWebhook(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		nUserWebhook := new(models.ClerkUserEvent)
 		if err := c.BodyParser(nUserWebhook); err != nil {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
 		}
-		user, err := h.GetUserByEmail(nUserWebhook.Data.GetEmail())
+		user, err := h.GetUserByEmail(nUserWebhook.Data.GetEmail(), rcache)
 		if user == nil || err != nil {
 			// ErrNoDocuments means that the filter did not match any documents in the collection
 			if user == nil || err == mongo.ErrNoDocuments {

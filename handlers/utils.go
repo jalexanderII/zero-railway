@@ -44,15 +44,33 @@ func NewHandler(collectionName string, l *logrus.Logger, p *client.PlaidClient) 
 	}
 }
 
-func (h *Handler) GetUserByEmail(email string) (*models.User, error) {
-	var user models.User
-	filter := bson.M{"email": email}
-	err := h.UserDb.FindOne(h.C, filter).Decode(&user)
-	if err != nil {
-		h.L.Error("[UserDB] Error getting user", "error", err)
+func (h *Handler) GetUserByEmail(email string, rcache *cache.Cache) (*models.User, error) {
+	var cachedUser models.User
+	err := rcache.Get(h.C, email, &cachedUser)
+	if err == cache.ErrCacheMiss {
+		var user models.User
+		filter := bson.M{"email": email}
+		err := h.UserDb.FindOne(h.C, filter).Decode(&user)
+		if err != nil {
+			h.L.Error("[UserDB] Error getting user", "error", err)
+			return nil, err
+		}
+
+		if err := rcache.Set(&cache.Item{
+			Ctx:   h.C,
+			Key:   email,
+			Value: &user,
+			TTL:   24 * time.Hour,
+		}); err != nil {
+			return nil, err
+		}
+
+		return &user, nil
+	} else if err != nil {
 		return nil, err
 	}
-	return &user, nil
+
+	return &cachedUser, nil
 }
 
 func (h *Handler) GetUserByID(userId string) (*models.User, error) {

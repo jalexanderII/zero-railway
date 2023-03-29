@@ -58,8 +58,8 @@ func SetupRoutes(app *fiber.App) {
 
 	coreEndpoints := api.Group("/core")
 	coreEndpoints.Get("/kpi/:email", handlers.GetKPIs(accountHandler, planningURL, rcache))
-	coreEndpoints.Get("/paymentplan/:email", handlers.GetPaymentPlans(paymentTaskHandler, planningURL))
-	coreEndpoints.Post("/paymentplan/:email", handlers.CreatePaymentPlan(paymentTaskHandler, planningURL))
+	coreEndpoints.Get("/paymentplan/:email", handlers.GetPaymentPlans(paymentTaskHandler, planningURL, rcache))
+	coreEndpoints.Post("/paymentplan/:email", handlers.CreatePaymentPlan(paymentTaskHandler, planningURL, rcache))
 	coreEndpoints.Post("/paymentplan/delete/:id", handlers.DeletePaymentPlan(paymentTaskHandler, planningURL))
 
 	accounts := coreEndpoints.Group("/accounts")
@@ -71,20 +71,21 @@ func SetupRoutes(app *fiber.App) {
 	transactions.Get("/:email", handlers.GetUsersTransactions(transactionHandler, rcache))
 
 	paymentTasks := coreEndpoints.Group("/payment_tasks")
-	paymentTasks.Get("/:email", handlers.GetUsersPaymentTasks(paymentTaskHandler))
+	paymentTasks.Get("/:email", handlers.GetUsersPaymentTasks(paymentTaskHandler, rcache))
 
 	users := coreEndpoints.Group("/users")
-	users.Post("/", handlers.CreateUser(userHandler))
-	users.Get("/:email", handlers.GetUser(userHandler))
-	users.Put("/:email", handlers.UpdateUserPhone(userHandler))
+	users.Post("/", handlers.CreateUser(userHandler, rcache))
+	users.Get("/:email", handlers.GetUser(userHandler, rcache))
+	users.Put("/:email", handlers.UpdateUserPhone(userHandler, rcache))
 
 	clerk := users.Group("/clerk")
-	clerk.Post("/", handlers.CreateUserClerkWebhook(userHandler))
+	clerk.Post("/", handlers.CreateUserClerkWebhook(userHandler, rcache))
 	// clerk.Delete("/", handlers.DeleteUserClerkWebhook(userHandler))
 	// clerk.Patch("/", handlers.UpdateUserClerkWebhook(userHandler))
 
 	planning := api.Group("/planning")
 	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL, rcache))
+	planning.Post("/accept", handlers.AcceptPaymentPlan(paymentTaskHandler, planningURL, rcache))
 
 	// TODO: Add swagger annotations
 	plaidEndpoints := api.Group("/plaid")

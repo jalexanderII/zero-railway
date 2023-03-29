@@ -114,6 +114,11 @@ type CreatePaymentPlanRequest struct {
 	SavePlan     bool          `json:"save_plan,omitempty"`
 }
 
+type AcceptPaymentPlanRequest struct {
+	PaymentPlan PaymentPlan `json:"payment_plan,omitempty"`
+	SavePlan    bool        `json:"save_plan,omitempty"`
+}
+
 type GetAllUpcomingPaymentActionsRequest struct {
 	Date string `json:"date,omitempty"`
 }

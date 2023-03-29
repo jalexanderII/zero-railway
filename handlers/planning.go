@@ -30,7 +30,7 @@ type KPI struct {
 func GetKPIs(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
@@ -111,7 +111,7 @@ type Series struct {
 func GetWaterfall(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}

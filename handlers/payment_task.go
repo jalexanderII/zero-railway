@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/go-redis/cache/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jalexanderII/zero-railway/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,10 +15,10 @@ import (
 // @Produce json
 // @Success 200 {object} []models.PaymentTask
 // @Router /payment_tasks/:email [get]
-func GetUsersPaymentTasks(h *Handler) func(c *fiber.Ctx) error {
+func GetUsersPaymentTasks(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}

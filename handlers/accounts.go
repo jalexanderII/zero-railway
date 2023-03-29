@@ -18,7 +18,7 @@ func GetUsersAccountsByEmail(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx)
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/go-redis/cache/v8"
 	"log"
 	"net/http"
 	"time"
@@ -23,10 +24,10 @@ import (
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
 // @Router /paymentplan/:email [post]
-func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func CreatePaymentPlan(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found ", err.Error())
 		}
@@ -60,6 +61,49 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 	}
 }
 
+// @Summary Create the accepted Payment Plan for the user.
+// @Description Create the defined payment plan for a specific user.
+// @Tags paymentplan
+// @Accept json
+// @Param accept_payment_plan_request body models.AcceptPaymentPlanRequest true "Accept Payment Plan request"
+// @Produce json
+// @Success 200 {object} []models.PaymentPlan
+// @Router /paymentplan/accept [post]
+func AcceptPaymentPlan(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		//email := c.Params("email")
+		//_, err := h.GetUserByEmail(email, rcache)
+		//if err != nil {
+		//	return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found ", err.Error())
+		//}
+
+		currentDate := time.Now().Format("01.02.2006")
+
+		acceptPaymentPlan := new(models.AcceptPaymentPlanRequest)
+		if err := c.BodyParser(acceptPaymentPlan); err != nil {
+			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
+		}
+
+		h.L.Infof("AcceptPaymentPlan %v", acceptPaymentPlan.PaymentPlan)
+		// send payment tasks to planning to get payment plans
+		url := fmt.Sprintf("%s/paymentplan/accept", planningUrl)
+		res, err := planningAcceptPaymentPlan(h, url, acceptPaymentPlan)
+		if err != nil {
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error accepting payment plan ", err.Error())
+		}
+
+		responsePaymentPlans := make([]models.PaymentPlan, len(res.PaymentPlans))
+		for idx, paymentPlan := range res.PaymentPlans {
+			pp := CreateResponsePaymentPlan(paymentPlan)
+			name := fmt.Sprintf("Plan_%v_%v_%v", idx+1, pp.UserId[len(pp.UserId)-4:], currentDate)
+			pp.Name = name
+			responsePaymentPlans[idx] = pp
+		}
+
+		return FiberJsonResponse(c, fiber.StatusOK, "success", "accepted payment plan created", responsePaymentPlans)
+	}
+}
+
 // @Summary Get payment plans for a single user.
 // @Description fetch all payment plans for the user by email.
 // @Tags paymentplan
@@ -67,11 +111,11 @@ func CreatePaymentPlan(h *Handler, planningUrl string) func(c *fiber.Ctx) error 
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
 // @Router /paymentplan/:email [get]
-func GetPaymentPlans(h *Handler, planningUrl string) func(c *fiber.Ctx) error {
+func GetPaymentPlans(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		email := c.Params("email")
 
-		user, err := h.GetUserByEmail(email)
+		user, err := h.GetUserByEmail(email, rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
 		}
@@ -152,6 +196,27 @@ func planningCreatePaymentPlan(h *Handler, url string, req *models.CreatePayment
 		log.Fatal(err)
 	}
 
+	result, err := planningPostRequest(h, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func planningAcceptPaymentPlan(h *Handler, url string, req *models.AcceptPaymentPlanRequest) (*models.PaymentPlanResponse, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result, err := planningPostRequest(h, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func planningPostRequest(h *Handler, url string, body []byte) (*models.PaymentPlanResponse, error) {
 	resp, err := h.H.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		panic(err)
