@@ -33,7 +33,7 @@ type Transaction struct {
 	OriginalDescription  string              `json:"original_description" bson:"original_description"`
 	Amount               float64             `json:"amount" bson:"amount"`
 	IsoCurrencyCode      string              `json:"iso_currency_code" bson:"iso_currency_code"`
-	Date                 string              `json:"date" bson:"date"`
+	Date                 int64               `json:"date" bson:"date"`
 	Pending              bool                `json:"pending" bson:"pending"`
 	MerchantName         string              `json:"merchant_name" bson:"merchant_name"`
 	PaymentChannel       string              `json:"payment_channel" bson:"payment_channel"`

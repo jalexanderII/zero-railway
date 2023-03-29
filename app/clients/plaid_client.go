@@ -375,6 +375,14 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 		if err != nil {
 			userId = primitive.NewObjectID()
 		}
+		timeLayout := "2006-01-02" // This defines the layout pattern, not an actual date
+		// Parse ISO 8601 date string to Go time.Time
+		parsedDate, err := time.Parse(timeLayout, transaction.Date)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing transaction Date. transaction.Date: %s. Error: %s", transaction.Date, err.Error())
+		}
+		// Get Unix timestamp in milliseconds
+		unixTimestampMillis := parsedDate.UnixNano() / int64(time.Millisecond)
 		transactions = append(transactions, &models.Transaction{
 			ID:                   transaction.TransactionId,
 			UserId:               userId,
@@ -395,7 +403,7 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 			OriginalDescription: transaction.GetOriginalDescription(),
 			Amount:              float64(transaction.Amount),
 			IsoCurrencyCode:     transaction.GetIsoCurrencyCode(),
-			Date:                transaction.Date,
+			Date:                unixTimestampMillis,
 			Pending:             transaction.Pending,
 			MerchantName:        transaction.GetMerchantName(),
 			PaymentChannel:      transaction.PaymentChannel,
@@ -406,7 +414,6 @@ func (p *PlaidClient) PlaidResponseToPB(lr models.LiabilitiesResponse, tr models
 			PlaidTransactionId:  transaction.TransactionId,
 			InPlan:              false,
 		})
-
 	}
 	return &models.AccountDetailsResponse{
 		Accounts:     accounts,
