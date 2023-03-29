@@ -23,13 +23,12 @@ import (
 // @Param payment_plan_request body models.GetPaymentPlanRequest true "Payment Plan request"
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
-// @Router /paymentplan/:email [post]
+// @Router /paymentplan [post]
 func CreatePaymentPlan(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found ", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		currentDate := time.Now().Format("01.02.2006")
@@ -71,12 +70,6 @@ func CreatePaymentPlan(h *Handler, planningUrl string, rcache *cache.Cache) func
 // @Router /paymentplan/accept [post]
 func AcceptPaymentPlan(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		//email := c.Params("email")
-		//_, err := h.GetUserByEmail(email, rcache)
-		//if err != nil {
-		//	return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found ", err.Error())
-		//}
-
 		currentDate := time.Now().Format("01.02.2006")
 
 		acceptPaymentPlan := new(models.AcceptPaymentPlanRequest)
@@ -110,14 +103,12 @@ func AcceptPaymentPlan(h *Handler, planningUrl string, rcache *cache.Cache) func
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} []models.PaymentPlan
-// @Router /paymentplan/:email [get]
+// @Router /paymentplan [get]
 func GetPaymentPlans(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		url := fmt.Sprintf("%s/payment_plans/%s", planningUrl, user.GetID().Hex())

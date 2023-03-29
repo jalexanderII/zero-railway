@@ -11,13 +11,12 @@ import (
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} []models.Transaction
-// @Router /transactions/:email [get]
+// @Router /transactions [get]
 func GetUsersTransactions(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		transactions, err := FetchTransactionDetails(*user.GetID(), h.P, rcache)

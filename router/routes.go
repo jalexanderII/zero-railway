@@ -42,6 +42,7 @@ func SetupRoutes(app *fiber.App) {
 	userHandler := handlers.NewHandler(os.Getenv("USER_COLLECTION"), l, plaidClient)
 	planningURL := os.Getenv("PLANNING_URL")
 	twilioClient := client.NewTwilioClient(l)
+	app.Use(GetUserFromClerkId(userHandler.UserDb, rcache))
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -57,26 +58,26 @@ func SetupRoutes(app *fiber.App) {
 	api.Get("/cleanup/:test", handlers.CleanUp(userHandler))
 
 	coreEndpoints := api.Group("/core")
-	coreEndpoints.Get("/kpi/:email", handlers.GetKPIs(accountHandler, planningURL, rcache))
-	coreEndpoints.Get("/paymentplan/:email", handlers.GetPaymentPlans(paymentTaskHandler, planningURL, rcache))
-	coreEndpoints.Post("/paymentplan/:email", handlers.CreatePaymentPlan(paymentTaskHandler, planningURL, rcache))
+	coreEndpoints.Get("/kpi", handlers.GetKPIs(accountHandler, planningURL, rcache))
+	coreEndpoints.Get("/paymentplan", handlers.GetPaymentPlans(paymentTaskHandler, planningURL, rcache))
+	coreEndpoints.Post("/paymentplan", handlers.CreatePaymentPlan(paymentTaskHandler, planningURL, rcache))
 	coreEndpoints.Post("/paymentplan/delete/:id", handlers.DeletePaymentPlan(paymentTaskHandler, planningURL))
 
 	accounts := coreEndpoints.Group("/accounts")
-	accounts.Get("/:email", handlers.GetUsersAccountsByEmail(accountHandler, rcache))
+	accounts.Get("/", handlers.GetUsersAccountsByEmail(accountHandler, rcache))
 	accounts.Get("/user_id/:user_id", handlers.GetUsersAccountsByUserID(accountHandler, rcache))
 	accounts.Get("/acc_id/:acc_id/:user_id", handlers.GetAccount(accountHandler, rcache))
 
 	transactions := coreEndpoints.Group("/transactions")
-	transactions.Get("/:email", handlers.GetUsersTransactions(transactionHandler, rcache))
+	transactions.Get("/", handlers.GetUsersTransactions(transactionHandler, rcache))
 
 	paymentTasks := coreEndpoints.Group("/payment_tasks")
-	paymentTasks.Get("/:email", handlers.GetUsersPaymentTasks(paymentTaskHandler, rcache))
+	paymentTasks.Get("/", handlers.GetUsersPaymentTasks(paymentTaskHandler, rcache))
 
 	users := coreEndpoints.Group("/users")
 	users.Post("/", handlers.CreateUser(userHandler, rcache))
-	users.Get("/:email", handlers.GetUser(userHandler, rcache))
-	users.Put("/:email", handlers.UpdateUserPhone(userHandler, rcache))
+	users.Get("/", handlers.GetUser(userHandler, rcache))
+	users.Put("/", handlers.UpdateUserPhone(userHandler, rcache))
 
 	clerk := users.Group("/clerk")
 	clerk.Post("/", handlers.CreateUserClerkWebhook(userHandler, rcache))
@@ -84,7 +85,7 @@ func SetupRoutes(app *fiber.App) {
 	// clerk.Patch("/", handlers.UpdateUserClerkWebhook(userHandler))
 
 	planning := api.Group("/planning")
-	planning.Get("/waterfall/:email", handlers.GetWaterfall(accountHandler, planningURL, rcache))
+	planning.Get("/waterfall", handlers.GetWaterfall(accountHandler, planningURL, rcache))
 	planning.Post("/accept", handlers.AcceptPaymentPlan(paymentTaskHandler, planningURL, rcache))
 
 	// TODO: Add swagger annotations
@@ -93,8 +94,8 @@ func SetupRoutes(app *fiber.App) {
 	plaidEndpoints.Get("/link/:email/:purpose", handlers.Link)
 	plaidEndpoints.Post("/create_link", handlers.CreateLinkToken(plaidClient))
 	plaidEndpoints.Post("/exchange", handlers.ExchangePublicToken(plaidClient, rcache))
-	plaidEndpoints.Get("/linked/:email", handlers.ArePlaidAccountsLinked(plaidClient, rcache))
-	plaidEndpoints.Get("/accounts/:email", handlers.GetAccountInfo(plaidClient, rcache))
+	plaidEndpoints.Get("/linked", handlers.ArePlaidAccountsLinked(plaidClient, rcache))
+	plaidEndpoints.Get("/accounts", handlers.GetAccountInfo(plaidClient, rcache))
 
 	notificationEndpoints := api.Group("/notify")
 	notificationEndpoints.Get("/", handlers.NotifyUsersUpcomingPaymentActions(twilioClient, accountHandler, planningURL, rcache))

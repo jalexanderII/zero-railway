@@ -53,15 +53,13 @@ func CreateUser(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} models.User
-// @Router /users/:email [get]
+// @Router /users [get]
 func GetUser(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
-
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "found user", user)
 	}
 }
@@ -104,15 +102,13 @@ type UpdateResponse struct {
 // @Param email path string true "User Email"
 // @Produce json
 // @Success 200 {object} UpdateResponse
-// @Router /users/:email [put]
+// @Router /users [put]
 func UpdateUserPhone(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
-
 		uUser := new(UpdateInput)
 		if err = c.BodyParser(uUser); err != nil {
 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
@@ -164,76 +160,6 @@ func CreateUserClerkWebhook(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) 
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{user.ID})
 	}
 }
-
-// // @Summary Create a user.
-// // @Description create a single user.
-// // @Tags user
-// // @Accept json
-// // @Param user body models.ClerkUserDeleted true "User to create"
-// // @Produce json
-// // @Success 200 {object} DBInsertResponse
-// // @Router /users [post]
-// func DeleteUserClerkWebhook(h *Handler) func(c *fiber.Ctx) error {
-// 	return func(c *fiber.Ctx) error {
-// 		nUser := new(models.User)
-// 		if err := c.BodyParser(nUser); err != nil {
-// 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
-// 		}
-//
-// 		user, err := h.GetUserByEmail(nUser.Email)
-// 		if user == nil || err != nil {
-// 			// ErrNoDocuments means that the filter did not match any documents in the collection
-// 			if user == nil || err == mongo.ErrNoDocuments {
-// 				nUser.ID = primitive.NewObjectID()
-// 				nUser.CreatedAt = time.Now()
-// 				nUser.UpdatedAt = time.Now()
-// 				res, err := h.Db.InsertOne(h.C, nUser)
-// 				if err != nil {
-// 					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err.Error())
-// 				}
-// 				return FiberJsonResponse(c, fiber.StatusOK, "success", "new user created", res.InsertedID)
-// 			}
-// 			h.L.Error("[UserDB] Error checking if user already exists", "error", err.Error())
-// 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err.Error())
-// 		}
-// 		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{user.ID})
-// 	}
-// }
-//
-// // @Summary Create a user.
-// // @Description create a single user.
-// // @Tags user
-// // @Accept json
-// // @Param user body models.ClerkUserEvent true "User to create"
-// // @Produce json
-// // @Success 200 {object} DBInsertResponse
-// // @Router /users [post]
-// func UpdateUserClerkWebhook(h *Handler) func(c *fiber.Ctx) error {
-// 	return func(c *fiber.Ctx) error {
-// 		nUser := new(models.User)
-// 		if err := c.BodyParser(nUser); err != nil {
-// 			return FiberJsonResponse(c, fiber.StatusBadRequest, "error", "request body malformed", err.Error())
-// 		}
-//
-// 		user, err := h.GetUserByEmail(nUser.Email)
-// 		if user == nil || err != nil {
-// 			// ErrNoDocuments means that the filter did not match any documents in the collection
-// 			if user == nil || err == mongo.ErrNoDocuments {
-// 				nUser.ID = primitive.NewObjectID()
-// 				nUser.CreatedAt = time.Now()
-// 				nUser.UpdatedAt = time.Now()
-// 				res, err := h.Db.InsertOne(h.C, nUser)
-// 				if err != nil {
-// 					return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed to create user", err.Error())
-// 				}
-// 				return FiberJsonResponse(c, fiber.StatusOK, "success", "new user created", res.InsertedID)
-// 			}
-// 			h.L.Error("[UserDB] Error checking if user already exists", "error", err.Error())
-// 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error checking if user already exists", err.Error())
-// 		}
-// 		return FiberJsonResponse(c, fiber.StatusOK, "success", "users already exists", DBInsertResponse{user.ID})
-// 	}
-// }
 
 func CleanUp(h *Handler) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {

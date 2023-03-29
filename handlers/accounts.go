@@ -13,16 +13,13 @@ import (
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} []models.Account
-// @Router /accounts/:email [get]
+// @Router /accounts [get]
 func GetUsersAccountsByEmail(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
-
 		accounts, err := GetUserAccounts(h, user.GetID(), rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users accounts", err.Error())
@@ -58,7 +55,7 @@ func GetUsersAccountsByUserID(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx
 // @Accept */*
 // @Produce json
 // @Success 200 {object} models.Account
-// @Router /accounts/acc_id/:acc_id/:email [get]
+// @Router /accounts/acc_id/:acc_id/:user_id [get]
 func GetAccount(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		userId, err := primitive.ObjectIDFromHex(c.Params("user_id"))
@@ -71,6 +68,7 @@ func GetAccount(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting users account", err.Error())
 		}
+		h.L.Info("accounts fetched", Accounts)
 
 		for _, acc := range Accounts {
 			if acc.ID == accId {

@@ -197,3 +197,12 @@ func FetchTransactionDetails(userID primitive.ObjectID, plaidClient *client.Plai
 	}
 	return AccountDetails.Transactions, nil
 }
+
+func GetUserFromCache(c *fiber.Ctx, rcache *cache.Cache) (*models.User, error) {
+	var user models.User
+	err := rcache.Get(c.Context(), c.Get("Clerk"), &user)
+	if err != nil {
+		return nil, fmt.Errorf("user not found in cache %s", c.Get("Clerk"))
+	}
+	return &user, nil
+}

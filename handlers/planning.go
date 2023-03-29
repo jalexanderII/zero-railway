@@ -26,15 +26,13 @@ type KPI struct {
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} KPI
-// @Router /kpi/:email [get]
+// @Router /kpi [get]
 func GetKPIs(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
-
 		accounts, err := GetUserAccounts(h, user.GetID(), rcache)
 		if err != nil {
 			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user accounts not found", err.Error())
@@ -107,13 +105,12 @@ type Series struct {
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} Series
-// @Router /waterfall/:email [get]
+// @Router /waterfall [get]
 func GetWaterfall(h *Handler, planningUrl string, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		accounts, err := GetUserAccounts(h, user.GetID(), rcache)

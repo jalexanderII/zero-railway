@@ -14,13 +14,12 @@ import (
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} []models.PaymentTask
-// @Router /payment_tasks/:email [get]
+// @Router /payment_tasks [get]
 func GetUsersPaymentTasks(h *Handler, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := h.GetUserByEmail(email, rcache)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		paymentTasks := make([]models.PaymentTask, 0)

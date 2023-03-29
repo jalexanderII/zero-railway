@@ -141,13 +141,12 @@ func ExchangePublicToken(plaidClient *client.PlaidClient, rcache *cache.Cache) f
 // @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} models.AccountDetailsResponse
-// @Router /accounts/:email [get]
+// @Router /accounts [get]
 func GetAccountInfo(plaidClient *client.PlaidClient, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := plaidClient.GetUserByEmail(email)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		AccountDetails, err := FetchDataAndCache(*user.GetID(), plaidClient, rcache, false)
@@ -168,10 +167,9 @@ func GetandSaveAccountDetails(plaidClient *client.PlaidClient, token *models.Tok
 
 func ArePlaidAccountsLinked(plaidClient *client.PlaidClient, rcache *cache.Cache) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		email := c.Params("email")
-		user, err := plaidClient.GetUserByEmail(email)
+		user, err := GetUserFromCache(c, rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusNotFound, "error", "user not found", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "failed getting user's account", err.Error())
 		}
 
 		type Exist struct {
