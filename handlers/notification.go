@@ -3,8 +3,11 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-redis/cache/v8"
+	"github.com/sirupsen/logrus"
+	"sync"
 	"time"
 
 	client "github.com/jalexanderII/zero-railway/app/clients"
@@ -43,9 +46,18 @@ func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, plan
 			h.L.Error("error listing upcoming PaymentActions", err.Error())
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing upcoming PaymentActions", err.Error())
 		}
-		h.L.Info("upcomingPaymentActionsAllUsers", upcomingPaymentActionsAllUsers)
+
+		// Use wait group to wait for all goroutines to finish
+		var wg sync.WaitGroup
+
 		userIds := upcomingPaymentActionsAllUsers.UserIds
 		paymentActions := upcomingPaymentActionsAllUsers.PaymentActions
+
+		// create a mutex for protecting concurrent access to the notifications map
+		var notificationsMutex sync.Mutex
+
+		// create a map to store user notifications
+		notifications := make(map[string]string)
 
 		// create map of UserID -> AccID -> Liability
 		userAccLiabilities := make(map[string]map[string]float64)
@@ -57,46 +69,77 @@ func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, plan
 			userAccLiabilities[userIds[idx]][paymentActions[idx].AccountId] += paymentActions[idx].Amount
 		}
 
-		// creates map of how to inform users
-		userNotify := make(map[string]string)
+		errorChan := make(chan error, len(userIds))
+
 		for userId, accLiab := range userAccLiabilities {
-			totalLiab := 0.0
-			for _, liab := range accLiab {
-				totalLiab += liab
-			}
+			wg.Add(1) // increment wait group counter
 
-			id, _ := primitive.ObjectIDFromHex(userId)
-			userAccs, err := GetUserAccounts(h, &id, rcache)
-			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error listing accounts", err.Error())
-			}
-			totalDebit := GetDebitAccountBalance(h, &id, rcache)
-			if err != nil {
-				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error getting debit balance", err.Error())
-			}
+			go func(userId string, accLiab map[string]float64) {
+				defer wg.Done() // decrement wait group counter when done
 
-			if totalDebit.CurrentBalance < totalLiab {
-				userNotify[userId] = fmt.Sprintf("You are missing $%v for tomorrows upcoming total payment of $%v", totalLiab-totalDebit.CurrentBalance, totalLiab)
-			} else {
-				userNotify[userId] = fmt.Sprintf("You are all setup for tomorrows total payment of $%v", totalLiab)
-			}
-			for accId, liab := range accLiab {
-				accName := ""
-				for _, acc := range userAccs {
-					if acc.ID == accId {
-						accName = acc.OfficialName
-						break
-					}
+				totalLiab := 0.0
+				for _, liab := range accLiab {
+					totalLiab += liab
 				}
-				startingStr := fmt.Sprintf("For account %v: $%v \n", accName, liab)
-				startingStr += userNotify[userId]
-				userNotify[userId] = startingStr
+
+				id, _ := primitive.ObjectIDFromHex(userId)
+				userAccs, err := GetUserAccounts(h, &id, rcache)
+				if err != nil {
+					notifyError(h.L, errorChan, "error listing accounts", err.Error())
+					return // using return instead of FiberJsonResponse because this is a goroutine, not the main function
+				}
+
+				totalDebit := GetDebitAccountBalance(h, &id, rcache)
+				if err != nil {
+					notifyError(h.L, errorChan, "error getting debit balance", err.Error())
+					return // using return instead of FiberJsonResponse because this is a goroutine, not the main function
+				}
+
+				var message string
+				if totalDebit.CurrentBalance < totalLiab {
+					message = fmt.Sprintf("You are missing $%.2f for tomorrows upcoming total payment of $%.2f", totalLiab-totalDebit.CurrentBalance, totalLiab)
+				} else {
+					message = fmt.Sprintf("You are all set up for tomorrows total payment of $%.2f", totalLiab)
+				}
+
+				for accId, liab := range accLiab {
+					accName := ""
+					for _, acc := range userAccs {
+						if acc.ID == accId {
+							accName = acc.OfficialName
+							break
+						}
+					}
+					startingStr := fmt.Sprintf("For account %v. Payment of $%.2f \n", accName, liab)
+					startingStr += message
+
+					// Lock the mutex before updating the map
+					notificationsMutex.Lock()
+					notifications[userId] = startingStr
+
+					// Unlock the mutex after updating the map
+					notificationsMutex.Unlock()
+				}
+			}(userId, accLiab) // passing userId and accLiab as arguments to the anonymous goroutine
+		}
+
+		// Wait for all goroutines to finish
+		go func() {
+			wg.Wait()
+			close(errorChan)
+		}()
+
+		resps := make([]models.SendSMSResponse, 0)
+
+		// Check for any errors received from goroutines
+		for err := range errorChan {
+			if err != nil {
+				return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "error processing user notifications", err.Error())
 			}
 		}
 
-		resps := make([]models.SendSMSResponse, 0)
-		// send notifications to the appropriate user
-		for userId, message := range userNotify {
+		// send notifications to the appropriate user using data from the map
+		for userId, message := range notifications {
 			user, _ := h.GetUserByID(userId)
 			resp, err := tc.SendSMS(user.PhoneNumber, message)
 			if err != nil {
@@ -107,6 +150,13 @@ func NotifyUsersUpcomingPaymentActions(tc *client.TwilioClient, h *Handler, plan
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "successfully notified users", resps)
 	}
+}
+
+// notifyError - log error
+func notifyError(L *logrus.Logger, errChan chan error, msg string, err string) {
+	L.Error(msg, err)
+	errChan <- errors.New(err)
+	return
 }
 
 func planningGetAllUpcomingPaymentActions(h *Handler, url string, req *models.GetAllUpcomingPaymentActionsRequest) (*models.GetAllUpcomingPaymentActionsResponse, error) {

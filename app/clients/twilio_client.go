@@ -30,7 +30,6 @@ func NewTwilioClient(l *logrus.Logger) *TwilioClient {
 }
 
 func (t *TwilioClient) SendSMS(to, body string) (*models.SendSMSResponse, error) {
-	t.L.Infof("Sending SMS to %s", to)
 	params := &twilioApi.CreateMessageParams{}
 	params.SetTo(to)
 	params.SetFrom(t.number)
@@ -41,8 +40,7 @@ func (t *TwilioClient) SendSMS(to, body string) (*models.SendSMSResponse, error)
 		t.L.Errorf("Error sending SMS: %s", err.Error())
 		return &models.SendSMSResponse{Successful: false, ErrorMessage: err.Error()}, err
 	} else {
-		response, _ := json.Marshal(*resp)
-		t.L.Infof("Response: %s", string(response))
-		return &models.SendSMSResponse{Successful: true, ErrorMessage: ""}, nil
+		_, _ = json.Marshal(*resp)
+		return &models.SendSMSResponse{Successful: true, ErrorMessage: "none"}, nil
 	}
 }
