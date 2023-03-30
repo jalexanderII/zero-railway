@@ -8,9 +8,8 @@ import (
 )
 
 // @Summary Get accounts for a single user.
-// @Description fetch all accounts for the user by email.
+// @Description fetch all accounts for the user.
 // @Tags accounts
-// @Param email path string true "User email"
 // @Produce json
 // @Success 200 {object} []models.Account
 // @Router /accounts [get]

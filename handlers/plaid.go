@@ -126,9 +126,14 @@ func ExchangePublicToken(plaidClient *client.PlaidClient, rcache *cache.Cache) f
 			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to save token", err.Error())
 		}
 
-		err = GetandSaveAccountDetails(plaidClient, token, c, rcache)
+		//err = GetandSaveAccountDetails(plaidClient, token, c, rcache)
+		//if err != nil {
+		//	return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get and save account details", err.Error())
+		//}
+
+		err = plaidClient.ClearCache(*user.GetID(), rcache)
 		if err != nil {
-			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to get and save account details", err.Error())
+			return FiberJsonResponse(c, fiber.StatusInternalServerError, "error", "Failure to clear catch after saving new tokens", err.Error())
 		}
 		return FiberJsonResponse(c, fiber.StatusOK, "success", "Access token created successfully", Response{token.Value, token.ItemId, input})
 	}

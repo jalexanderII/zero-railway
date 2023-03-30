@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-redis/cache/v8"
 	"math"
 	"os"
 	"strings"
@@ -633,4 +634,12 @@ func (p *PlaidClient) GetUserByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (p *PlaidClient) ClearCache(userID primitive.ObjectID, rcache *cache.Cache) error {
+	err := rcache.Delete(p.C, userID.Hex())
+	if err != nil {
+		return err
+	}
+	return nil
 }
