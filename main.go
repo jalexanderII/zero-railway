@@ -14,7 +14,6 @@ func getPort() string {
 	} else {
 		port = ":" + port
 	}
-
 	return port
 }
 
